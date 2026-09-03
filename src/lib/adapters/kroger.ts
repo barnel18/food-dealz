@@ -20,6 +20,14 @@ interface KrogerProduct {
   brand?: string;
   categories?: string[];
   items?: KrogerItem[];
+  images?: Array<{ perspective?: string; featured?: boolean; sizes?: Array<{ size?: string; url?: string }> }>;
+}
+
+function productImage(p: KrogerProduct): string | null {
+  const imgs = p.images ?? [];
+  const front = imgs.find((i) => i.perspective === 'front') ?? imgs.find((i) => i.featured) ?? imgs[0];
+  const sizes = front?.sizes ?? [];
+  return sizes.find((s) => s.size === 'medium')?.url ?? sizes.find((s) => s.size === 'large')?.url ?? sizes[0]?.url ?? null;
 }
 
 let tokenCache: { token: string; expiresAt: number } | null = null;
@@ -130,13 +138,14 @@ export const krogerAdapter: Adapter = {
           percent_off: null,
           quantity,
           unit,
-          conditions: p.brand ? `${p.brand}. Store price feed.` : 'Store price feed.',
+          conditions: 'Sale price at this store. Store card may be required.',
           starts_at: null,
           ends_at: null,
           days_of_week: null,
           time_window: null,
           evidence_quote: `${p.description} ${it.size ?? ''} regular ${regular} promo ${promo}`.trim(),
           confidence: 1,
+          image_url: productImage(p),
         };
         candidates.push({
           external_id: p.productId ?? p.upc ?? null,

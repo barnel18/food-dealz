@@ -8,6 +8,7 @@ import { BookmarkIcon, CompassIcon, MapPinIcon, TagIcon } from './icons';
 const TABS = [
   { href: '/deals', label: 'Deals', Icon: TagIcon },
   { href: '/cheapest', label: 'Cheapest', Icon: CompassIcon },
+  { href: '/compare', label: 'Compare', Icon: TagIcon },
   { href: '/saved', label: 'Saved', Icon: BookmarkIcon },
   { href: '/', label: 'Location', Icon: MapPinIcon },
 ] as const;
@@ -36,7 +37,7 @@ export function NavTabs({ variant }: { variant: 'top' | 'bottom' }) {
   }
 
   return (
-    <nav className="grid grid-cols-4" aria-label="Primary">
+    <nav className="grid grid-cols-5" aria-label="Primary">
       {TABS.map(({ href, label, Icon }) => (
         <Link
           key={href}

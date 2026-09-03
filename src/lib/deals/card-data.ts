@@ -23,7 +23,8 @@ export function fromRadiusRow(r: DealInRadius): DealCardData {
     sourceType: r.source_type,
     lastSeenAt: r.last_seen_at,
     isFeatured: r.is_featured,
-    business: { id: r.business_id, name: r.business_name, slug: r.business_slug, category: r.business_category, address: r.address },
+    imageUrl: r.image_url ?? null,
+    business: { id: r.business_id, name: r.business_name, slug: r.business_slug, category: r.business_category, address: r.address, logoUrl: r.business_logo_url ?? null },
     distanceM: r.distance_m == null ? null : Number(r.distance_m),
   };
 }
@@ -49,7 +50,8 @@ export function fromDetail(d: DealDetail, distanceM: number | null = null): Deal
     sourceType: d.source_type,
     lastSeenAt: d.last_seen_at,
     isFeatured: d.is_featured || (d.business.featured_until != null && new Date(d.business.featured_until) > new Date()),
-    business: { id: d.business.id, name: d.business.name, slug: d.business.slug, category: d.business.category, address: d.business.address },
+    imageUrl: d.image_url ?? null,
+    business: { id: d.business.id, name: d.business.name, slug: d.business.slug, category: d.business.category, address: d.business.address, logoUrl: d.business.logo_url ?? null },
     distanceM,
   };
 }

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   const supabase = createStaticClient();
   const { data, error } = await supabase
     .from('deals')
-    .select('*, business:businesses(id,name,slug,category,chain_key,address,city,state,postal_code,phone,website_url,google_place_id,featured_until,is_active,lat,lng)')
+    .select('*, business:businesses(id,name,slug,category,chain_key,address,city,state,postal_code,phone,website_url,google_place_id,featured_until,is_active,logo_url,photo_url,lat,lng)')
     .in('id', ids);
   if (error) return NextResponse.json({ deals: [], error: error.message }, { status: 500 });
   const rows = (data ?? []) as unknown as DealDetail[];

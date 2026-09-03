@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AdapterError, getAdapter, type SourceRow } from '@/lib/adapters';
 import type { BusinessRow } from '@/lib/deals/types';
+import { resolveAndStoreLogo } from '@/lib/logos/resolve-logo';
 import { enqueueJob } from '../queue';
 
 const DISABLE_AFTER_FAILURES = 5;
@@ -55,14 +56,32 @@ export async function handleCrawlSource(db: SupabaseClient, payload: Record<stri
     }
     for (const row of inserted) await enqueueJob(db, 'extract_capture', { capture_id: row.id });
 
+    // First crawl of a business without a logo: try to find one (Instagram profile picture wins).
+    const biz = business as BusinessRow;
+    if (!biz.logo_url) {
+      const pic = (result.candidates[0]?.payload as { profile?: { pic_url?: string | null } } | undefined)?.profile?.pic_url ?? null;
+      await resolveAndStoreLogo(db, { id: biz.id, website_url: biz.website_url }, { instagramPicUrl: pic }).catch(() => null);
+    }
+
+    // Websites that never change and never yield deals get checked less often (saves crawl credits).
+    let interval = src.crawl_interval_hours;
+    if (src.type === 'website' && inserted.length === 0) {
+      const { count } = await db.from('deals').select('id', { count: 'exact', head: true }).eq('business_id', src.business_id).eq('source_type', 'website');
+      if (!count) interval = Math.min(720, Math.max(interval * 2, 168));
+    }
     await db
       .from('sources')
       .update({
         last_crawled_at: new Date().toISOString(),
         consecutive_failures: 0,
+        crawl_interval_hours: interval,
         ...(inserted.length ? { last_changed_at: new Date().toISOString() } : {}),
       })
       .eq('id', src.id);
+    const merchantLogo = (result.candidates[0]?.payload as { merchant_logo?: string | null } | undefined)?.merchant_logo ?? null;
+    if (merchantLogo && (business as BusinessRow).chain_key) {
+      await db.from('businesses').update({ logo_url: merchantLogo }).eq('chain_key', (business as BusinessRow).chain_key).is('logo_url', null);
+    }
     return `${rows.length} captured, ${inserted.length} new${result.unchanged ? ' (unchanged)' : ''}${result.note ? ` — ${result.note}` : ''}`;
   } catch (e) {
     const failures = (src.consecutive_failures ?? 0) + 1;

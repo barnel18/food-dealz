@@ -2,7 +2,7 @@ import 'server-only';
 import { isSupabaseConfigured } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import type { UserLocation } from '@/lib/location/cookie';
-import type { BusinessCategory, BusinessRow, CheapestByItem, DealDetail, DealInRadius, DealRow } from './types';
+import type { BusinessCategory, BusinessRow, CheapestByItem, DealDetail, DealInRadius, DealRow, StorePriceRow } from './types';
 
 export interface QueryResult<T> {
   data: T;
@@ -10,7 +10,7 @@ export interface QueryResult<T> {
   error: string | null;
 }
 
-const BUSINESS_SELECT = 'id,name,slug,category,chain_key,address,city,state,postal_code,phone,website_url,google_place_id,featured_until,is_active,lat,lng';
+const BUSINESS_SELECT = 'id,name,slug,category,chain_key,address,city,state,postal_code,phone,website_url,google_place_id,featured_until,is_active,logo_url,photo_url,lat,lng';
 
 export interface DealFilters {
   category?: BusinessCategory | null;
@@ -124,4 +124,15 @@ export async function getSavedDeals(userId: string): Promise<QueryResult<DealDet
   }
   const rows = (data ?? []) as unknown as { deal: DealDetail | null }[];
   return { data: rows.map((r) => r.deal).filter((d): d is DealDetail => d !== null), error: null };
+}
+
+export async function getStorePrices(loc: UserLocation, slugs: string[]): Promise<QueryResult<StorePriceRow[]>> {
+  if (!isSupabaseConfigured()) return { data: [], error: 'not_configured' };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('store_prices', { p_lat: loc.lat, p_lng: loc.lng, p_radius_m: loc.radiusM, p_slugs: slugs });
+  if (error) {
+    console.error('[store_prices]', error.message);
+    return { data: [], error: error.message };
+  }
+  return { data: (data ?? []) as StorePriceRow[], error: null };
 }

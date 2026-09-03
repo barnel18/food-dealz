@@ -23,6 +23,8 @@ interface IgProfile {
   biography?: string;
   externalUrl?: string;
   followersCount?: number;
+  profilePicUrlHD?: string;
+  profilePicUrl?: string;
   private?: boolean;
   latestPosts?: IgPost[];
   error?: string;
@@ -61,7 +63,7 @@ export const apifyInstagramAdapter: Adapter = {
           post_type: p.type ?? null,
           hashtags: p.hashtags ?? [],
           location: p.locationName ?? null,
-          profile: { username: profile.username, full_name: profile.fullName, followers: profile.followersCount, website: profile.externalUrl },
+          profile: { username: profile.username, full_name: profile.fullName, followers: profile.followersCount, website: profile.externalUrl, pic_url: profile.profilePicUrlHD ?? profile.profilePicUrl ?? null },
         },
       });
     }

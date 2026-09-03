@@ -29,6 +29,7 @@ export interface DealDraft {
   evidence_quote: string | null;
   status: 'pending' | 'approved';
   dedupe_key: string;
+  image_url: string | null;
   /** Why this draft needs a human (empty when auto-approved). */
   review_reasons: string[];
 }
@@ -42,6 +43,8 @@ export interface PostprocessContext {
   capturedText: string;
   usedImages: boolean;
   autoApproveThreshold: number;
+  /** Photo to attach to every draft from this capture (e.g. the Instagram post image). */
+  imageUrl?: string | null;
 }
 
 export interface PostprocessResult {
@@ -96,7 +99,7 @@ function resolveSlug(raw: string | null, itemName: string, category: BusinessCat
   return best?.slug ?? null;
 }
 
-export function postprocess(raw: ExtractedDeal[], ctx: PostprocessContext): PostprocessResult {
+export function postprocess(raw: Array<ExtractedDeal & { image_url?: string | null }>, ctx: PostprocessContext): PostprocessResult {
   const drafts: DealDraft[] = [];
   const dropped: PostprocessResult['dropped'] = [];
   const tokens = numericTokens(ctx.capturedText);
@@ -198,6 +201,7 @@ export function postprocess(raw: ExtractedDeal[], ctx: PostprocessContext): Post
       evidence_quote: d.evidence_quote?.trim().slice(0, 500) || null,
       status,
       dedupe_key: dedupeKey({ businessId: ctx.businessId, slug, itemName, dealType, price, quantity, unit: d.unit }),
+      image_url: d.image_url ?? ctx.imageUrl ?? null,
       review_reasons: reasons,
     });
   }

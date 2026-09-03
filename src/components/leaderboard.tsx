@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { formatDistance, formatUnitPrice } from '@/lib/deals/format';
 import type { CheapestByItem } from '@/lib/deals/types';
 import { categoryMeta } from '@/lib/taxonomy/categories';
+import { BusinessAvatar } from './business-avatar';
 import { ChevronRightIcon } from './icons';
 
 export function Leaderboard({ rows }: { rows: CheapestByItem[] }) {
@@ -19,13 +20,17 @@ export function Leaderboard({ rows }: { rows: CheapestByItem[] }) {
         const meta = categoryMeta(category);
         return (
           <section key={category}>
-            <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-              <span aria-hidden="true">{meta.emoji}</span> {meta.label}
-            </h2>
+            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">{meta.label}</h2>
             <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
               {items.map((r) => (
                 <li key={r.canonical_item_slug}>
                   <Link href={`/cheapest/${r.canonical_item_slug}`} className="flex items-center gap-3 px-4 py-3 transition hover:bg-surface-2">
+                    {r.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={r.image_url} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-lg border border-line bg-white object-contain" />
+                    ) : (
+                      <BusinessAvatar name={r.business_name} logoUrl={r.business_logo_url} size={40} />
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="font-medium">{r.display_name}</div>
                       <div className="truncate text-sm text-muted">

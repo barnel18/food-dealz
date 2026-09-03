@@ -12,7 +12,7 @@ import { getDealById, getSavedDealIds } from '@/lib/deals/queries';
 import { haversineM } from '@/lib/geo/distance';
 import { getLocation } from '@/lib/location/server';
 import { CANONICAL_ITEM_BY_SLUG } from '@/lib/taxonomy/canonical-items';
-import { categoryMeta } from '@/lib/taxonomy/categories';
+import { BusinessAvatar } from '@/components/business-avatar';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -51,11 +51,16 @@ export default async function DealPage(props: PageProps<'/deal/[id]'>) {
     <div className="py-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <Link href="/deals" className="text-sm text-muted hover:text-foreground">← All deals</Link>
-      <article className="mt-3 rounded-3xl border border-line bg-surface p-5 shadow-sm sm:p-7">
+      <article className="mt-3 overflow-hidden rounded-3xl border border-line bg-surface shadow-sm">
+        {deal.imageUrl && (
+          <div className="flex justify-center bg-white p-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={deal.imageUrl} alt={deal.title} className="max-h-72 w-auto max-w-full object-contain" />
+          </div>
+        )}
+        <div className="p-5 sm:p-7">
         <div className="flex items-start gap-4">
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-brand-soft text-3xl" aria-hidden="true">
-            {item ? categoryMeta(item.category).emoji : b.category === 'grocery' ? '\u{1F6D2}' : '\u{1F37D}️'}
-          </span>
+          <BusinessAvatar name={b.name} logoUrl={b.logo_url} size={56} className="rounded-2xl" />
           <div className="min-w-0 flex-1">
             {deal.isFeatured && <span className="mb-1 inline-block rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black">Sponsored</span>}
             <h1 className="text-2xl font-bold leading-tight tracking-tight">{deal.title}</h1>
@@ -106,6 +111,7 @@ export default async function DealPage(props: PageProps<'/deal/[id]'>) {
             <div className="sm:col-span-2"><dt className="text-muted">As posted</dt><dd className="italic">“{data.evidence_quote}”</dd></div>
           )}
         </dl>
+        </div>
       </article>
       {item && (
         <p className="mt-4 text-sm text-muted">

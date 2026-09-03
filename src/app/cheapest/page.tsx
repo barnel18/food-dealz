@@ -33,7 +33,7 @@ export default async function CheapestPage(props: PageProps<'/cheapest'>) {
       <LocationBar location={location} isDefault={isDefault} />
       <div className="mb-1">
         <h1 className="text-2xl font-bold tracking-tight">Cheapest by item</h1>
-        <p className="text-sm text-muted">The lowest unit price for each item within your radius. Tap an item to see every option.</p>
+        <p className="text-sm text-muted">The lowest unit price for each item within your radius. Tap an item to see every option, or <Link href="/compare" className="font-medium text-brand hover:underline">compare grocery stores side by side</Link>.</p>
       </div>
       <div className="my-4 flex gap-2">
         {tabs.map((t) => (

@@ -11,7 +11,7 @@ interface CaptureRow {
   business_id: string;
   content_text: string | null;
   image_urls: string[];
-  payload: Record<string, unknown> & { structured?: StructuredDeal | null; source_url?: string | null };
+  payload: Record<string, unknown> & { structured?: StructuredDeal | null; source_url?: string | null; chain_fanout?: boolean };
   posted_at: string | null;
   captured_at: string;
   extraction_status: string;
@@ -27,7 +27,7 @@ async function upsertDeal(db: SupabaseClient, draft: DealDraft): Promise<'merged
   const nowIso = new Date().toISOString();
   const { data: existing } = await db
     .from('deals')
-    .select('id, ends_at, status')
+    .select('id, ends_at, status, image_url')
     .eq('business_id', draft.business_id)
     .eq('dedupe_key', draft.dedupe_key)
     .in('status', ['approved', 'pending'])
@@ -35,9 +35,12 @@ async function upsertDeal(db: SupabaseClient, draft: DealDraft): Promise<'merged
     .limit(1)
     .maybeSingle();
   if (existing) {
-    const row = existing as { id: string; ends_at: string | null };
+    const row = existing as { id: string; ends_at: string | null; image_url: string | null };
     const later = draft.ends_at && (!row.ends_at || draft.ends_at > row.ends_at) ? draft.ends_at : row.ends_at;
-    await db.from('deals').update({ last_seen_at: nowIso, ends_at: later, source_capture_id: draft.source_capture_id }).eq('id', row.id);
+    await db
+      .from('deals')
+      .update({ last_seen_at: nowIso, ends_at: later, source_capture_id: draft.source_capture_id, ...(draft.image_url && !row.image_url ? { image_url: draft.image_url } : {}) })
+      .eq('id', row.id);
     return 'merged';
   }
   const { review_reasons, ...row } = draft;
@@ -71,6 +74,7 @@ export async function handleExtractCapture(db: SupabaseClient, payload: Record<s
     capturedText: capture.content_text ?? '',
     usedImages: false,
     autoApproveThreshold: threshold(),
+    imageUrl: sourceType === 'instagram' ? capture.image_urls?.[0] ?? null : null,
   };
 
   try {
@@ -111,9 +115,18 @@ export async function handleExtractCapture(db: SupabaseClient, payload: Record<s
 
     let inserted = 0;
     let merged = 0;
+    // Chain-wide ads (Flipp) apply to every active store of the chain, not just the source's store.
+    let targets: string[] = [biz.id];
+    if (capture.payload?.chain_fanout && biz.chain_key) {
+      const { data: siblings } = await db.from('businesses').select('id').eq('chain_key', biz.chain_key).eq('is_active', true);
+      targets = Array.from(new Set([biz.id, ...((siblings ?? []) as { id: string }[]).map((s) => s.id)]));
+    }
     for (const d of drafts) {
-      if ((await upsertDeal(db, d)) === 'inserted') inserted++;
-      else merged++;
+      for (const businessId of targets) {
+        const draft = businessId === d.business_id ? d : { ...d, business_id: businessId, dedupe_key: d.dedupe_key.replace(d.business_id, businessId) };
+        if ((await upsertDeal(db, draft)) === 'inserted') inserted++;
+        else merged++;
+      }
     }
 
     await db

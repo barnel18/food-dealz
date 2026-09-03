@@ -21,6 +21,7 @@ export interface DealInRadius {
   business_name: string;
   business_slug: string;
   business_category: BusinessCategory;
+  business_logo_url: string | null;
   address: string | null;
   lat: number;
   lng: number;
@@ -43,6 +44,7 @@ export interface DealInRadius {
   source_type: SourceType;
   last_seen_at: string;
   is_featured: boolean;
+  image_url: string | null;
 }
 
 /** Row shape returned by the `cheapest_by_item` RPC. */
@@ -55,6 +57,7 @@ export interface CheapestByItem {
   business_id: string;
   business_name: string;
   business_slug: string;
+  business_logo_url: string | null;
   title: string;
   price: number | null;
   quantity: number;
@@ -63,6 +66,7 @@ export interface CheapestByItem {
   distance_m: number;
   ends_at: string | null;
   deal_count: number;
+  image_url: string | null;
 }
 
 /** `businesses` table row (plus PostgREST computed columns lat/lng when selected). */
@@ -81,6 +85,8 @@ export interface BusinessRow {
   google_place_id: string | null;
   featured_until: string | null;
   is_active: boolean;
+  logo_url?: string | null;
+  photo_url?: string | null;
   lat?: number;
   lng?: number;
 }
@@ -109,6 +115,7 @@ export interface DealRow {
   evidence_quote: string | null;
   status: DealStatus;
   is_featured: boolean;
+  image_url: string | null;
   first_seen_at: string;
   last_seen_at: string;
   created_at: string;
@@ -138,6 +145,23 @@ export interface DealCardData {
   sourceType: SourceType;
   lastSeenAt: string;
   isFeatured: boolean;
-  business: { id: string; name: string; slug: string; category: BusinessCategory; address: string | null };
+  imageUrl: string | null;
+  business: { id: string; name: string; slug: string; category: BusinessCategory; address: string | null; logoUrl: string | null };
   distanceM: number | null;
+}
+
+/** Row shape returned by the `store_prices` RPC (compare page). */
+export interface StorePriceRow {
+  business_id: string;
+  business_name: string;
+  business_slug: string;
+  business_logo_url: string | null;
+  distance_m: number;
+  canonical_item_slug: string;
+  unit_price: number;
+  price: number | null;
+  quantity: number;
+  unit: UnitKind;
+  title: string;
+  deal_id: string;
 }

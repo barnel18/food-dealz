@@ -5,7 +5,7 @@ import { formatDistance, formatUnitPrice } from '@/lib/deals/format';
 import { getCheapestByItem } from '@/lib/deals/queries';
 import { getLocation, getLocationOrDefault } from '@/lib/location/server';
 import { MADISON_PRESETS } from '@/lib/location/presets';
-import { categoryMeta } from '@/lib/taxonomy/categories';
+import { BusinessAvatar } from '@/components/business-avatar';
 
 export default async function HomePage() {
   const saved = await getLocation();
@@ -48,7 +48,7 @@ export default async function HomePage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {teaser.map((r) => (
               <Link key={r.canonical_item_slug} href={`/cheapest/${r.canonical_item_slug}`} className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 transition hover:shadow-md">
-                <span className="text-2xl" aria-hidden="true">{categoryMeta(r.category).emoji}</span>
+                <BusinessAvatar name={r.business_name} logoUrl={r.business_logo_url} size={40} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{r.display_name}</div>
                   <div className="truncate text-sm text-muted">{r.business_name} · {formatDistance(r.distance_m)}</div>

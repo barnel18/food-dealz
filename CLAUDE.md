@@ -16,7 +16,8 @@ Full v1 plan (architecture, schema rationale, phases, verification): `/Users/luc
 - `pnpm dev` / `pnpm build` / `pnpm typecheck` / `pnpm lint` / `pnpm test` (vitest: unit-price, kroger size parsing, postprocess)
 - `pnpm worker:dev` (poll jobs forever) / `pnpm worker:once` (drain queue, exit) — the pipeline only moves while a worker runs (locally or on Railway via `railway.json`).
 - `pnpm crawl:enqueue [sourceId]` — queue crawls now. `pnpm kroger:sync [zip] [miles]` — upsert Kroger-banner stores + price-feed sources.
-- `pnpm discover:instagram [tags…]` / `pnpm discover:reddit` — find Madison food businesses; inserted INACTIVE for review at `/admin/businesses?status=inactive`.
+- `pnpm osm:seed [--from-file f]` — seed every restaurant/bar/cafe/grocery in the bbox from OpenStreetMap (website sources for independents, weekly). `pnpm flipp:sync [zip]` — one Flipp weekly-ad source per grocery chain (fans out to every store via `chain_key`). `pnpm logos:fetch [--all]` — store logos/photos from site icons into the `logos` bucket.
+- `pnpm discover:instagram [tags…]` / `pnpm discover:reddit [--from-file f]` — find Madison food businesses; inserted INACTIVE for review at `/admin/businesses?status=inactive`. Apify free tier is $5/mo — cap result counts.
 - `pnpm key [NAME]` — save an API key into `.env.local` from a terminal prompt (`SUPABASE_DB_PASSWORD` also builds `DATABASE_URL`). `pnpm dev:login <email> [base] [next]` — one-time sign-in link, no email needed.
 - `pnpm taxonomy:gen [version]` — regenerate the `canonical_items` seed migration after editing `src/lib/taxonomy/canonical-items.ts`. Use a new timestamp once the previous seed migration has been applied.
 - `pnpm db:push` / `pnpm db:types` / `pnpm db:query "<sql>"` — project ref is pinned in the scripts. If `db push` fails on the DB password, apply a migration with `pnpm db:query -f supabase/migrations/<file>.sql` (Management API) and fix the keyring later via `supabase link -p`.
@@ -32,5 +33,6 @@ Full v1 plan (architecture, schema rationale, phases, verification): `/Users/luc
 - Prices are `numeric(10,2)`. `deals.unit_price` is per the item's `comparable_unit`; `null` when not computable (excluded from leaderboard, still shown in feed).
 - Deal windows are interpreted in `America/Chicago`.
 - Browser/RSC code goes through RLS with the anon key. Worker, scripts, and admin mutations use the service role. `SUPABASE_SERVICE_ROLE_KEY` never reaches the client bundle.
+- Sources: `website` (Firecrawl, adaptive interval up to 30d when dry), `instagram` (Apify), `kroger_api` (per store), `flipp` (per chain, fan-out). Deal photos: `deals.image_url` (Kroger/Flipp product images, Instagram post image); business logos/photos in Storage bucket `logos`.
 - Extraction hallucination gate: every price must appear verbatim in the captured text (or carry an `evidence_quote` and go to manual review). Do not relax it.
 - Env: copy `.env.example` → `.env.local`. Launch-market values (`LAUNCH_*`) are already set for Madison.

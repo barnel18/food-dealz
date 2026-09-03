@@ -34,6 +34,7 @@ export interface StructuredDeal {
   time_window: string | null;
   evidence_quote: string;
   confidence: number;
+  image_url?: string | null;
 }
 
 export interface CaptureCandidate {

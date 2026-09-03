@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DealList } from '@/components/deal-list';
 import { EmptyState } from '@/components/empty-state';
+import { BusinessAvatar } from '@/components/business-avatar';
 import { ExternalLinkIcon, MapPinIcon, PhoneIcon } from '@/components/icons';
 import { SetupNotice } from '@/components/setup-notice';
 import { getCurrentUser } from '@/lib/auth/dal';
@@ -34,9 +35,19 @@ export default async function BusinessPage(props: PageProps<'/b/[slug]'>) {
   return (
     <div className="py-6">
       <Link href="/deals" className="text-sm text-muted hover:text-foreground">← All deals</Link>
-      <header className="mt-3 rounded-3xl border border-line bg-surface p-5 shadow-sm sm:p-7">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand">{categoryLabel(b.category)}</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight">{b.name}</h1>
+      <header className="mt-3 overflow-hidden rounded-3xl border border-line bg-surface shadow-sm">
+        {b.photo_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={b.photo_url} alt="" className="h-40 w-full object-cover sm:h-56" />
+        )}
+        <div className="p-5 sm:p-7">
+        <div className="flex items-center gap-4">
+          <BusinessAvatar name={b.name} logoUrl={b.logo_url} size={64} className="rounded-2xl" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand">{categoryLabel(b.category)}</p>
+            <h1 className="mt-0.5 text-3xl font-bold tracking-tight">{b.name}</h1>
+          </div>
+        </div>
         <p className="mt-1 text-muted">
           {b.address}
           {distanceM != null && <> · {formatDistance(distanceM)} away</>}
@@ -55,6 +66,7 @@ export default async function BusinessPage(props: PageProps<'/b/[slug]'>) {
               <PhoneIcon className="h-4 w-4" /> {b.phone}
             </a>
           )}
+        </div>
         </div>
       </header>
 

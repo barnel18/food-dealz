@@ -69,6 +69,9 @@ and Kroger's public API for Pick 'n Save / Metro Market prices. Captures are ext
 pnpm worker:dev          # run the job worker (crawl → extract → expire)
 pnpm crawl:enqueue       # queue every active source now
 pnpm kroger:sync         # add Kroger stores near Madison as price feeds
+pnpm osm:seed            # every restaurant/bar/grocery from OpenStreetMap
+pnpm flipp:sync          # weekly-ad feeds for Hy-Vee, Aldi, Woodman's, Target, Meijer…
+pnpm logos:fetch         # business logos from website icons
 pnpm discover:instagram  # find local food businesses by hashtag (inactive until reviewed)
 pnpm discover:reddit     # find businesses people mention on r/madisonwi
 pnpm dev:login you@x.com # one-time local sign-in link

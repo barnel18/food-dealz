@@ -24,7 +24,11 @@
     "discover:instagram": "tsx scripts/discover-instagram.ts",
     "discover:reddit": "tsx scripts/discover-reddit.ts",
     "eval": "tsx scripts/eval.ts",
-    "extract:one": "tsx scripts/extract-one.ts"
+    "extract:one": "tsx scripts/extract-one.ts",
+    "logos:fetch": "tsx scripts/fetch-logos.ts",
+    "osm:seed": "tsx scripts/seed-osm.ts",
+    "flipp:sync": "tsx scripts/sync-flipp.ts",
+    "crawl:type": "tsx scripts/enqueue-by-type.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
