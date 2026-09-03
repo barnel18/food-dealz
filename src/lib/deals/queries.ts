@@ -2,6 +2,7 @@ import 'server-only';
 import { isSupabaseConfigured } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import type { UserLocation } from '@/lib/location/cookie';
+import { CANONICAL_ITEMS } from '@/lib/taxonomy/canonical-items';
 import type { BusinessCategory, BusinessRow, CheapestByItem, DealDetail, DealInRadius, DealRow, StorePriceRow } from './types';
 
 export interface QueryResult<T> {
@@ -20,6 +21,8 @@ export interface DealFilters {
   offset?: number;
   /** Max rows per business in the feed (null = uncapped). Ignored when `item` is set. */
   perBusiness?: number | null;
+  /** Free-text search: deal title/item, business name, or canonical items whose names/aliases match. */
+  query?: string | null;
 }
 
 export async function getDealsInRadius(loc: UserLocation, f: DealFilters = {}): Promise<QueryResult<DealInRadius[]>> {
@@ -35,6 +38,8 @@ export async function getDealsInRadius(loc: UserLocation, f: DealFilters = {}): 
     p_limit: f.limit ?? 40,
     p_offset: f.offset ?? 0,
     p_per_business: f.perBusiness === undefined ? (f.category === 'grocery' ? 6 : 3) : f.perBusiness,
+    p_query: f.query?.trim() || null,
+    p_slugs: f.query?.trim() ? matchingSlugs(f.query) : null,
   });
   if (error) {
     console.error('[deals_in_radius]', error.message);
@@ -135,4 +140,11 @@ export async function getStorePrices(loc: UserLocation, slugs: string[]): Promis
     return { data: [], error: error.message };
   }
   return { data: (data ?? []) as StorePriceRow[], error: null };
+}
+
+/** Canonical items whose display name or aliases contain the query (for search). */
+export function matchingSlugs(query: string): string[] {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return [];
+  return CANONICAL_ITEMS.filter((i) => i.displayName.toLowerCase().includes(q) || i.aliases.some((a) => a.includes(q) || q.includes(a))).map((i) => i.slug);
 }

@@ -24,16 +24,17 @@ export default async function DealsPage(props: PageProps<'/deals'>) {
   const itemParam = first(sp.item);
   const item = itemParam && CANONICAL_ITEM_BY_SLUG.has(itemParam) ? itemParam : null;
   const todayOnly = first(sp.today) === '1';
+  const query = (first(sp.q) ?? '').trim().slice(0, 80) || null;
   const offset = Math.max(0, parseInt(first(sp.offset) ?? '0', 10) || 0);
 
   const { location, isDefault } = await getLocationOrDefault();
   const [{ data: rows, error }, user] = await Promise.all([
-    getDealsInRadius(location, { category, item, todayOnly, limit: PAGE_SIZE, offset }),
+    getDealsInRadius(location, { category, item, todayOnly, query, limit: PAGE_SIZE, offset }),
     getCurrentUser(),
   ]);
   const savedIds = user ? await getSavedDealIds(user.id) : new Set<string>();
   const deals = rows.map(fromRadiusRow);
-  const state = { category, item, todayOnly };
+  const state = { category, item, todayOnly, query };
   const nextHref = `${filterHref('/deals', state)}${filterHref('/deals', state).includes('?') ? '&' : '?'}offset=${offset + PAGE_SIZE}`;
 
   return (
@@ -41,9 +42,10 @@ export default async function DealsPage(props: PageProps<'/deals'>) {
       <LocationBar location={location} isDefault={isDefault} />
       <DealFilters state={state} />
       {error && <div className="mb-4"><SetupNotice error={error} /></div>}
+      {query && <p className="mb-3 text-sm text-muted">{deals.length}{deals.length === PAGE_SIZE ? '+' : ''} result{deals.length === 1 ? '' : 's'} for “{query}”</p>}
       {deals.length === 0 && !error ? (
         <EmptyState
-          title={`No deals within ${Math.round(metersToMiles(location.radiusM))} mi`}
+          title={query ? `Nothing matching “${query}” within ${Math.round(metersToMiles(location.radiusM))} mi` : `No deals within ${Math.round(metersToMiles(location.radiusM))} mi`}
           description="Try a bigger radius, clear the filters, or pick a different spot."
           action={{ href: '/', label: 'Change location' }}
         />

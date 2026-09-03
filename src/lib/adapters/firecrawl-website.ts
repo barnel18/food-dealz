@@ -1,6 +1,15 @@
 import { AdapterError, requireEnv, type Adapter, type CrawlResult, type SourceRow } from './types';
 
 const MAX_MARKDOWN = 40_000;
+// Firecrawl's free tier allows ~10 scrapes/minute: serialize calls with a minimum gap.
+const MIN_GAP_MS = Number(process.env.FIRECRAWL_MIN_GAP_MS ?? 6500);
+let nextSlot = 0;
+async function throttle(): Promise<void> {
+  const now = Date.now();
+  const at = Math.max(now, nextSlot);
+  nextSlot = at + MIN_GAP_MS;
+  if (at > now) await new Promise((r) => setTimeout(r, at - now));
+}
 
 interface ScrapeResponse {
   success: boolean;
@@ -20,6 +29,7 @@ export const firecrawlWebsiteAdapter: Adapter = {
     if (!url) throw new AdapterError('website source has no url', false);
     const key = requireEnv('FIRECRAWL_API_KEY');
 
+    await throttle();
     const res = await fetch('https://api.firecrawl.dev/v2/scrape', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
