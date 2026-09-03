@@ -25,7 +25,8 @@ Full v1 plan (architecture, schema rationale, phases, verification): `/Users/luc
 ## Production
 - https://fooddealz.site (Vercel project `food-dealz`, team `barnes-inc1`; GitHub `barnel18/food-dealz` auto-deploys `main`; manual: `vercel deploy --prod --yes`). Deployment Protection is on, so `*.vercel.app` URLs need a Vercel login; the custom domain is public.
 - Supabase ref `bsdtucwqxbjypnvkrvyt`; auth redirect URLs live in `supabase/config.toml` (`supabase config push`).
-- Admin: `/admin` (email in `ADMIN_EMAILS` or `profiles.role='admin'`). Website/Kroger/portal deals auto-approve when checks pass; Instagram always goes to review.
+- Admin: `/admin` (email in `ADMIN_EMAILS` or `profiles.role='admin'`). Website/Kroger/Flipp/portal deals auto-approve when checks pass; Instagram always goes to review. `pnpm deals:prune [--dry]` re-checks structured deals after taxonomy changes; `pnpm deals:apply <decisions.json>` applies reviewed decisions.
+- Worker 24/7: Railway project `food-dealz`, service `worker` (GitHub repo `main`, Railpack, start `pnpm worker:dev`, no Next build). Settings live in `.railway/railway.ts` (`npx /cli config plan` → `config apply`; variables use `preserve()`). Sync env from `.env.local` with `bash scripts/railway-env.sh --service worker` (never prints values; it skips the auto-redeploy, so redeploy afterwards). Deploy the working tree with `npx /cli up --service worker --detach`; logs via `npx /cli logs --service worker [--build]`.
 
 ## Conventions
 - `src/lib/taxonomy/canonical-items.ts` is the single source of truth for items. Never hand-edit the generated seed migration.

@@ -1,5 +1,0 @@
-{
-  "$schema": "https://railway.com/railway.schema.json",
-  "build": { "builder": "RAILPACK", "buildCommand": "echo 'worker: no build step (tsx runs TypeScript directly)'" },
-  "deploy": { "startCommand": "pnpm worker:dev", "restartPolicyType": "ALWAYS", "numReplicas": 1 }
-}
