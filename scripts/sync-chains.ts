@@ -19,17 +19,25 @@ type Biz = { id: string; name: string; brand: string | null; chain_key: string |
 
 async function main() {
   const db = createServiceClient();
-  const { data, error } = await db.from('businesses').select('id,name,brand,chain_key,lat,lng').eq('is_active', true).limit(5000);
-  if (error) throw error;
-  const all = (data ?? []) as Biz[];
+  // PostgREST caps a single request at 1,000 rows, so page through every active business.
+  const all: Biz[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await db.from('businesses').select('id,name,brand,chain_key,lat,lng').eq('is_active', true).order('name').range(from, from + 999);
+    if (error) throw error;
+    all.push(...((data ?? []) as Biz[]));
+    if (!data || data.length < 1000) break;
+  }
   let sources = 0, stores = 0;
   for (const chain of CHAIN_SOURCES) {
     if (ONLY && !ONLY.has(chain.key)) continue;
-    const needles = chain.brandMatch.map((s) => s.toLowerCase());
+    // OSM/Google spell brands inconsistently ("Domino’s" vs "Domino's", "Dunkin" vs "Dunkin' Donuts"): normalise apostrophes
+    // and match either the brand field or the start of the business name.
+    const norm = (s: string) => s.toLowerCase().replace(/[’`´]/g, "'").replace(/\s+/g, ' ').trim();
+    const needles = chain.brandMatch.map(norm);
     const members = all.filter((b) => {
-      const brand = (b.brand ?? '').toLowerCase();
-      const name = b.name.toLowerCase();
-      return needles.some((n) => brand === n || (brand === '' && (name === n || name.startsWith(`${n} `) || name.startsWith(`${n}'`))));
+      const brand = norm(b.brand ?? '');
+      const name = norm(b.name);
+      return needles.some((n) => brand === n || name === n || name.startsWith(`${n} `) || name.startsWith(`${n} -`) || name.startsWith(`${n}:`));
     });
     if (members.length === 0) { console.log(`  · ${chain.key}: no Madison stores matched ${chain.brandMatch.join('/')}`); continue; }
     const anchor = [...members].sort((a, b) => dist(a) - dist(b))[0];
