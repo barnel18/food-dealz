@@ -13,7 +13,7 @@ export function DealList({
   showBusiness?: boolean;
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
       {deals.map((d) => (
         <DealCard key={d.id} deal={d} saved={savedIds.has(d.id)} isLoggedIn={isLoggedIn} showBusiness={showBusiness} />
       ))}

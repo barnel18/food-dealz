@@ -3,14 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
-import { BookmarkIcon, CompassIcon, MapPinIcon, TagIcon } from './icons';
+import { BookmarkIcon, CompassIcon, GridIcon, StoreIcon, TagIcon } from './icons';
 
 const TABS = [
+  { href: '/places', label: 'Places', Icon: StoreIcon },
   { href: '/deals', label: 'Deals', Icon: TagIcon },
   { href: '/cheapest', label: 'Cheapest', Icon: CompassIcon },
-  { href: '/compare', label: 'Compare', Icon: TagIcon },
+  { href: '/compare', label: 'Compare', Icon: GridIcon },
   { href: '/saved', label: 'Saved', Icon: BookmarkIcon },
-  { href: '/', label: 'Location', Icon: MapPinIcon },
 ] as const;
 
 export function NavTabs({ variant }: { variant: 'top' | 'bottom' }) {

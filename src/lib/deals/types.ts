@@ -45,6 +45,7 @@ export interface DealInRadius {
   last_seen_at: string;
   is_featured: boolean;
   image_url: string | null;
+  business_photo_url: string | null;
 }
 
 /** Row shape returned by the `cheapest_by_item` RPC. */
@@ -146,7 +147,7 @@ export interface DealCardData {
   lastSeenAt: string;
   isFeatured: boolean;
   imageUrl: string | null;
-  business: { id: string; name: string; slug: string; category: BusinessCategory; address: string | null; logoUrl: string | null };
+  business: { id: string; name: string; slug: string; category: BusinessCategory; address: string | null; logoUrl: string | null; photoUrl: string | null };
   distanceM: number | null;
 }
 

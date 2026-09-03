@@ -24,7 +24,7 @@ export function fromRadiusRow(r: DealInRadius): DealCardData {
     lastSeenAt: r.last_seen_at,
     isFeatured: r.is_featured,
     imageUrl: r.image_url ?? null,
-    business: { id: r.business_id, name: r.business_name, slug: r.business_slug, category: r.business_category, address: r.address, logoUrl: r.business_logo_url ?? null },
+    business: { id: r.business_id, name: r.business_name, slug: r.business_slug, category: r.business_category, address: r.address, logoUrl: r.business_logo_url ?? null, photoUrl: r.business_photo_url ?? null },
     distanceM: r.distance_m == null ? null : Number(r.distance_m),
   };
 }
@@ -51,7 +51,7 @@ export function fromDetail(d: DealDetail, distanceM: number | null = null): Deal
     lastSeenAt: d.last_seen_at,
     isFeatured: d.is_featured || (d.business.featured_until != null && new Date(d.business.featured_until) > new Date()),
     imageUrl: d.image_url ?? null,
-    business: { id: d.business.id, name: d.business.name, slug: d.business.slug, category: d.business.category, address: d.business.address, logoUrl: d.business.logo_url ?? null },
+    business: { id: d.business.id, name: d.business.name, slug: d.business.slug, category: d.business.category, address: d.business.address, logoUrl: d.business.logo_url ?? null, photoUrl: d.business.photo_url ?? null },
     distanceM,
   };
 }

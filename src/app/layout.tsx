@@ -36,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <Nav />
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 sm:px-6">{children}</main>
         <footer className="mx-auto w-full max-w-5xl px-4 py-8 text-xs text-muted sm:px-6">
-          Food Dealz · Madison, WI. Prices come from businesses’ own posts, sites, and ads and can change without notice. Business owner?{' '}
+          Food Dealz · You’re in Madison, WI. Milwaukee, Minneapolis, and Chicago are next. Prices come from businesses’ own posts, sites, and weekly ads and can change without notice. Business owner?{' '}
           <span className="text-foreground">Claim-your-listing tools are coming soon.</span>
         </footer>
         <PwaRegister />

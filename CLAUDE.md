@@ -16,7 +16,7 @@ Full v1 plan (architecture, schema rationale, phases, verification): `/Users/luc
 - `pnpm dev` / `pnpm build` / `pnpm typecheck` / `pnpm lint` / `pnpm test` (vitest: unit-price, kroger size parsing, postprocess)
 - `pnpm worker:dev` (poll jobs forever) / `pnpm worker:once` (drain queue, exit) — the pipeline only moves while a worker runs (locally or on Railway via `railway.json`).
 - `pnpm crawl:enqueue [sourceId]` — queue crawls now. `pnpm kroger:sync [zip] [miles]` — upsert Kroger-banner stores + price-feed sources.
-- `pnpm osm:seed [--from-file f]` — seed every restaurant/bar/cafe/grocery in the bbox from OpenStreetMap (website sources for independents, weekly). `pnpm flipp:sync [zip]` — one Flipp weekly-ad source per grocery chain (fans out to every store via `chain_key`). `pnpm logos:fetch [--all]` — store logos/photos from site icons into the `logos` bucket.
+- `pnpm osm:seed [--from-file f]` — seed every restaurant/bar/cafe/grocery in the bbox from OpenStreetMap (website sources for independents, weekly). `pnpm flipp:sync [zip]` — one Flipp weekly-ad source per grocery chain (fans out to every store via `chain_key`). `pnpm logos:fetch [--all]` — store logos/photos from site icons into the `logos` bucket. `pnpm media:mirror [--dry]` — copy Instagram capture images into the public `media` bucket (`captures/<id>.jpg`) so deal/post photos do not expire; the worker does this automatically for new Instagram captures.
 - `pnpm discover:instagram [tags…]` / `pnpm discover:reddit [--from-file f]` — find Madison food businesses; inserted INACTIVE for review at `/admin/businesses?status=inactive`. Apify free tier is $5/mo — cap result counts.
 - `pnpm key [NAME]` — save an API key into `.env.local` from a terminal prompt (`SUPABASE_DB_PASSWORD` also builds `DATABASE_URL`). `pnpm dev:login <email> [base] [next]` — one-time sign-in link, no email needed.
 - `pnpm taxonomy:gen [version]` — regenerate the `canonical_items` seed migration after editing `src/lib/taxonomy/canonical-items.ts`. Use a new timestamp once the previous seed migration has been applied.
@@ -30,6 +30,8 @@ Full v1 plan (architecture, schema rationale, phases, verification): `/Users/luc
 
 ## Conventions
 - `src/lib/taxonomy/canonical-items.ts` is the single source of truth for items. Never hand-edit the generated seed migration.
+- `src/lib/cities/index.ts` is the source of truth for city identity (name, center, hero-map zoom, neighborhoods, roadmap cities). Pages read `getCity()`; never hard-code "Madison" in UI copy.
+- Places directory: `/places` (RPC `businesses_in_radius`), business pages use RPC `business_profile` for the Instagram handle, source types and latest posts (sources/captures are RLS-hidden, so these are `security definer`). Deal and place tiles are image-first: product image → business photo → logo panel.
 - Migrations are `YYYYMMDDHHMMSS_name.sql`. Never edit an applied migration; add a new one.
 - Prices are `numeric(10,2)`. `deals.unit_price` is per the item's `comparable_unit`; `null` when not computable (excluded from leaderboard, still shown in feed).
 - Deal windows are interpreted in `America/Chicago`.

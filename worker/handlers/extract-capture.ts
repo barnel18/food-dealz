@@ -4,6 +4,7 @@ import type { BusinessRow, SourceType } from '@/lib/deals/types';
 import { ExtractionError, extractDeals } from '@/lib/extraction/extract';
 import { postprocess, type DealDraft } from '@/lib/extraction/postprocess';
 import { dateInTz } from '@/lib/deals/dates';
+import { mirrorCaptureImage } from '@/lib/media/mirror';
 
 interface CaptureRow {
   id: string;
@@ -11,7 +12,7 @@ interface CaptureRow {
   business_id: string;
   content_text: string | null;
   image_urls: string[];
-  payload: Record<string, unknown> & { structured?: StructuredDeal | null; source_url?: string | null; chain_fanout?: boolean };
+  payload: Record<string, unknown> & { structured?: StructuredDeal | null; source_url?: string | null; chain_fanout?: boolean; mirrored_image_url?: string | null };
   posted_at: string | null;
   captured_at: string;
   extraction_status: string;
@@ -20,6 +21,31 @@ interface CaptureRow {
 function threshold(): number {
   const t = Number(process.env.EXTRACTION_AUTO_APPROVE_THRESHOLD ?? '0.85');
   return Number.isFinite(t) ? t : 0.85;
+}
+
+/**
+ * Instagram post images are signed CDN links that expire, so keep a copy in our public `media` bucket
+ * (once per capture; re-runs reuse `payload.mirrored_image_url`). Never fails the extraction: null means "keep the original URL".
+ */
+async function mirrorInstagramImage(db: SupabaseClient, capture: CaptureRow): Promise<string | null> {
+  const existing = capture.payload?.mirrored_image_url;
+  if (typeof existing === 'string' && existing) return existing;
+  const original = capture.image_urls?.[0];
+  if (!original) return null;
+  try {
+    const r = await mirrorCaptureImage(db, capture.id, original);
+    if (!r.ok) {
+      console.warn(`[extract] capture ${capture.id}: image mirror failed (${r.reason}); keeping the Instagram URL`);
+      return null;
+    }
+    // Merge so other payload keys (source_url, profile, …) survive.
+    const { error } = await db.from('raw_captures').update({ payload: { ...capture.payload, mirrored_image_url: r.url } }).eq('id', capture.id);
+    if (error) console.warn(`[extract] capture ${capture.id}: image mirrored but payload update failed: ${error.message}`);
+    return r.url;
+  } catch (e) {
+    console.warn(`[extract] capture ${capture.id}: image mirror failed (${e instanceof Error ? e.message : String(e)}); keeping the Instagram URL`);
+    return null;
+  }
 }
 
 /** Merge with an existing live deal at the same business (same dedupe key), else insert. */
@@ -65,6 +91,9 @@ export async function handleExtractCapture(db: SupabaseClient, payload: Record<s
   const biz = business as BusinessRow;
   const sourceType = (source as { type: SourceType }).type;
   const capturedAt = new Date(capture.captured_at);
+  // Instagram: the mirrored copy stands in for the expiring original, both as the deal photo and for the Claude image fetch.
+  const mirroredUrl = sourceType === 'instagram' ? await mirrorInstagramImage(db, capture) : null;
+  const imageUrls = mirroredUrl ? [mirroredUrl, ...(capture.image_urls ?? []).slice(1)] : capture.image_urls ?? [];
   const ctx = {
     businessId: biz.id,
     businessCategory: biz.category,
@@ -74,7 +103,7 @@ export async function handleExtractCapture(db: SupabaseClient, payload: Record<s
     capturedText: capture.content_text ?? '',
     usedImages: false,
     autoApproveThreshold: threshold(),
-    imageUrl: sourceType === 'instagram' ? capture.image_urls?.[0] ?? null : null,
+    imageUrl: sourceType === 'instagram' ? imageUrls[0] ?? null : null,
   };
 
   try {
@@ -103,7 +132,7 @@ export async function handleExtractCapture(db: SupabaseClient, payload: Record<s
         captureDate: dateInTz(capturedAt),
         postedAt: capture.posted_at,
         text: capture.content_text ?? '',
-        imageUrls: capture.image_urls ?? [],
+        imageUrls,
       });
       const r = postprocess(result.output.deals, { ...ctx, usedImages: result.usedImages });
       drafts = r.drafts;
