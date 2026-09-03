@@ -31,7 +31,7 @@ export const CUISINES: Cuisine[] = [
   { slug: 'coffee', label: 'Coffee & cafes', emoji: '☕', types: ['coffee_shop', 'cafe', 'tea_house'] },
   { slug: 'bakery', label: 'Bakeries', emoji: '🥐', types: ['bakery', 'donut_shop', 'bagel_shop'] },
   { slug: 'dessert', label: 'Ice cream & dessert', emoji: '🍦', types: ['ice_cream_shop', 'dessert_shop', 'dessert_restaurant', 'candy_store', 'chocolate_shop'] },
-  { slug: 'grocery', label: 'Grocery', emoji: '🛒', types: ['grocery_store', 'supermarket', 'asian_grocery_store', 'food_store', 'market'] },
+  { slug: 'grocery', label: 'Grocery', emoji: '🛒', types: ['grocery_store', 'supermarket', 'asian_grocery_store', 'wholesaler'] },
   { slug: 'butcher', label: 'Butchers & markets', emoji: '🔪', types: ['butcher_shop', 'fish_store'] },
   { slug: 'convenience', label: 'Convenience', emoji: '🏪', types: ['convenience_store', 'gas_station'] },
   { slug: 'liquor', label: 'Liquor', emoji: '🥃', types: ['liquor_store'] },
@@ -41,7 +41,10 @@ export const CUISINE_BY_SLUG = new Map(CUISINES.map((c) => [c.slug, c]));
 const CUISINE_BY_TYPE = new Map<string, Cuisine>();
 for (const c of CUISINES) for (const t of c.types) if (!CUISINE_BY_TYPE.has(t)) CUISINE_BY_TYPE.set(t, c);
 
-/** Google `types` (plus `primaryType`) → cuisine slugs, primary first, de-duplicated. */
+/** Generic labels that only mean something when nothing more specific applies. */
+const GENERIC = new Set(['american', 'fast-food']);
+
+/** Google `types` (plus `primaryType`) → up to three cuisine slugs, primary first; generic ones only as a fallback. */
 export function cuisinesFromTypes(types: string[], primaryType?: string | null): string[] {
   const out: string[] = [];
   const consider = primaryType ? [primaryType, ...types] : types;
@@ -49,7 +52,12 @@ export function cuisinesFromTypes(types: string[], primaryType?: string | null):
     const c = CUISINE_BY_TYPE.get(t);
     if (c && !out.includes(c.slug)) out.push(c.slug);
   }
-  return out;
+  const specific = out.filter((s) => !GENERIC.has(s));
+  const generic = out.filter((s) => GENERIC.has(s));
+  // Keep a generic tag when it is the primary type (a burger chain really is "fast food") or when nothing specific matched.
+  const primarySlug = primaryType ? CUISINE_BY_TYPE.get(primaryType)?.slug : undefined;
+  const keep = specific.length === 0 ? generic : primarySlug && GENERIC.has(primarySlug) ? [primarySlug, ...specific] : specific;
+  return Array.from(new Set(keep)).slice(0, 3);
 }
 
 export function cuisineLabel(slug: string): string {

@@ -97,6 +97,7 @@ async function syncOne(b: Biz): Promise<void> {
     review_count: p.userRatingCount ?? null,
     price_level: priceLevelNumber(p.priceLevel),
     cuisines: cuisinesFromTypes(p.types ?? [], p.primaryType),
+    google_types: [...(p.primaryType ? [p.primaryType] : []), ...(p.types ?? [])].filter((t, i, a) => a.indexOf(t) === i),
     primary_type: p.primaryTypeDisplayName?.text ?? p.primaryType ?? null,
     hours,
     photos,

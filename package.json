@@ -33,7 +33,8 @@
     "deals:prune": "tsx scripts/prune-mismatched.ts",
     "deals:apply": "tsx scripts/apply-review.ts",
     "google:sync": "tsx scripts/google-sync.ts",
-    "chains:sync": "tsx scripts/sync-chains.ts"
+    "chains:sync": "tsx scripts/sync-chains.ts",
+    "cuisines:remap": "tsx scripts/remap-cuisines.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
