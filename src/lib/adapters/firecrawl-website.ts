@@ -47,7 +47,9 @@ export const firecrawlWebsiteAdapter: Adapter = {
       throw new AdapterError(`firecrawl failed: ${json?.error ?? res.status}`, false);
     }
     const status = json.data.changeTracking?.changeStatus;
-    if (status === 'same') return { candidates: [], unchanged: true, note: 'unchanged since last scrape' };
+    // Firecrawl's change tracking is per URL and API key, so a page scraped for research (or by another source) can report
+    // 'same' before this source has ever captured it. Only skip when we already hold content for this source.
+    if (status === 'same' && source.last_changed_at) return { candidates: [], unchanged: true, note: 'unchanged since last scrape' };
     if (status === 'removed' || (json.data.metadata?.statusCode ?? 200) >= 400) {
       throw new AdapterError(`page unavailable (${json.data.metadata?.statusCode ?? status})`, false);
     }

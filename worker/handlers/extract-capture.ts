@@ -129,6 +129,9 @@ export async function handleExtractCapture(db: SupabaseClient, payload: Record<s
         category: biz.category,
         sourceType,
         sourceUrl: (capture.payload?.source_url as string | null) ?? null,
+        pageHint: capture.payload?.chain_fanout
+          ? "This is the chain's official national offers / value page. Value menus, bundles, boxes, meal deals and limited-time offers listed here WITH a price count as deals (use the listed price; note 'prices may vary by location' in conditions). Plain regular menu items are still not deals."
+          : null,
         captureDate: dateInTz(capturedAt),
         postedAt: capture.posted_at,
         text: capture.content_text ?? '',

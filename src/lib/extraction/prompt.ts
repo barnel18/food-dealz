@@ -47,6 +47,8 @@ export interface UserMessageInput {
   captureDate: string;
   postedAt: string | null;
   text: string;
+  /** Extra framing for special page kinds (e.g. a chain's national offers page). */
+  pageHint?: string | null;
 }
 
 export function buildUserMessage(i: UserMessageInput): string {
@@ -55,6 +57,7 @@ export function buildUserMessage(i: UserMessageInput): string {
     `SOURCE: ${i.sourceType}${i.sourceUrl ? ` ${i.sourceUrl}` : ''}`,
     `CAPTURE_DATE: ${i.captureDate}`,
     i.postedAt ? `POSTED_AT: ${i.postedAt}` : null,
+    i.pageHint ? `PAGE: ${i.pageHint}` : null,
     '---',
     i.text.trim() || '(no text; see attached image)',
   ]

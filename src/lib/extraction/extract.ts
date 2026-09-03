@@ -15,6 +15,8 @@ export interface ExtractionInput {
   /** YYYY-MM-DD in the launch time zone. */
   captureDate: string;
   postedAt: string | null;
+  /** Extra framing for special page kinds (chain offers pages). */
+  pageHint?: string | null;
   text: string;
   imageUrls: string[];
 }
