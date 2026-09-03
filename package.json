@@ -34,7 +34,8 @@
     "deals:apply": "tsx scripts/apply-review.ts",
     "google:sync": "tsx scripts/google-sync.ts",
     "chains:sync": "tsx scripts/sync-chains.ts",
-    "cuisines:remap": "tsx scripts/remap-cuisines.ts"
+    "cuisines:remap": "tsx scripts/remap-cuisines.ts",
+    "deals:autoapprove": "tsx scripts/auto-approve.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

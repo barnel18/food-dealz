@@ -162,8 +162,8 @@ export function postprocess(raw: Array<ExtractedDeal & { image_url?: string | nu
     let days = Array.isArray(d.days_of_week) ? Array.from(new Set(d.days_of_week.filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))) : null;
     if (days && (days.length === 0 || days.length === 7)) days = null;
 
+    // A missing canonical item only keeps the deal off the leaderboard; it is not a reason to hold a trusted source's deal.
     const slug = resolveSlug(d.canonical_item_slug, itemName, ctx.businessCategory);
-    if (!slug) reasons.push('no canonical item matched');
     const comparable = slug ? CANONICAL_ITEM_BY_SLUG.get(slug)?.comparableUnit : undefined;
     const unitPrice = comparable
       ? computeUnitPrice({ dealType, price, regularPrice: regular, percentOff: percent, quantity, unit: d.unit }, comparable)
