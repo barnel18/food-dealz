@@ -1,6 +1,6 @@
 import type { BusinessRow } from '@/lib/deals/types';
 import { CANONICAL_ITEMS, type CanonicalItem, type UnitKind } from '@/lib/taxonomy/canonical-items';
-import { parseKrogerSize } from './kroger';
+import { chooseQuantity, nameMatchesItem, sizeCandidates } from './kroger';
 import { AdapterError, type Adapter, type CaptureCandidate, type CrawlResult, type SourceRow, type StructuredDeal } from './types';
 
 /**
@@ -67,34 +67,33 @@ const num = (v: unknown): number | null => {
   return Number.isFinite(n) && n > 0 ? n : null;
 };
 
-function matchesItem(name: string, item: CanonicalItem): boolean {
-  const n = name.toLowerCase();
-  return [item.displayName.toLowerCase(), ...item.aliases].some((a) => a.length >= 4 && n.includes(a.split(' ')[0]));
-}
-
-/** Turn ad text into quantity/unit/deal_type. */
+/** Turn ad text into quantity/unit/deal_type, choosing the package reading that yields a plausible unit price. */
 export function interpretFlipp(it: FlippItem, item: CanonicalItem): { dealType: StructuredDeal['deal_type']; price: number | null; quantity: number; unit: UnitKind; conditions: string | null } | null {
   const texts = `${it.pre_price_text ?? ''} ${it.post_price_text ?? ''} ${it.sale_story ?? ''}`.toLowerCase();
   const name = it.name ?? '';
   const price = num(it.current_price);
-  const nFor = texts.match(/(\d+)\s*(?:for|\/)\s*\$?\s*(\d+(?:\.\d+)?)/) ?? name.toLowerCase().match(/(\d+)\s*for\s*\$(\d+(?:\.\d+)?)/);
   const conditions = [it.sale_story, it.pre_price_text, it.post_price_text].map((s) => (s ?? '').trim()).filter(Boolean).join(' · ') || null;
+  const nFor = texts.match(/(\d+)\s*(?:for|\/)\s*\$?\s*(\d+(?:\.\d+)?)/) ?? name.toLowerCase().match(/(\d+)\s*for\s*\$(\d+(?:\.\d+)?)/);
 
-  if (/buy\s*(one|1)[^a-z]*get\s*(one|1)\s*free|bogo/.test(texts) && price) return { dealType: 'bogo', price, quantity: 1, unit: 'each', conditions };
+  if (/buy\s*(one|1)[^a-z]*get\s*(one|1)\s*free|bogo/.test(texts) && price) {
+    const c = chooseQuantity(sizeCandidates(it.item_weight ?? name, undefined, name), price, item);
+    return c ? { dealType: 'bogo', price, quantity: c.quantity, unit: c.unit, conditions } : null;
+  }
   if (nFor) {
     const qty = Number(nFor[1]);
     const total = Number(nFor[2]);
     if (qty > 0 && total > 0) {
-      const sized = parseKrogerSize(it.item_weight ?? name, undefined, name);
-      const unit: UnitKind = sized.unit === 'each' ? 'each' : sized.unit;
-      return { dealType: 'bundle', price: total, quantity: sized.unit === 'each' ? qty : qty * sized.quantity, unit, conditions };
+      const perOne = total / qty;
+      const c = chooseQuantity(sizeCandidates(it.item_weight ?? name, undefined, name), perOne, item);
+      if (!c) return null;
+      return { dealType: 'bundle', price: total, quantity: c.unit === 'each' ? qty : c.quantity * qty, unit: c.unit, conditions };
     }
   }
   if (!price) return null;
-  if (/per\s*lb|\/\s*lb|\blb\b\.?$|pound/.test(texts) || (item.comparableUnit === 'lb' && /\blb\b/.test(texts))) return { dealType: 'fixed_price', price, quantity: 1, unit: 'lb', conditions };
-  const sized = parseKrogerSize(it.item_weight ?? name, undefined, name);
-  if (sized.unit !== 'each' || /\d+\s*(ct|count|pk|pack)/.test(name.toLowerCase())) return { dealType: 'fixed_price', price, quantity: sized.quantity, unit: sized.unit, conditions };
-  return { dealType: 'fixed_price', price, quantity: 1, unit: item.comparableUnit === 'lb' ? 'lb' : 'each', conditions };
+  const perLb = /per\s*lb|\/\s*lb|\blb\b\.?$|pound/.test(texts);
+  const candidates = perLb ? [{ quantity: 1, unit: 'lb' as UnitKind }, ...sizeCandidates(it.item_weight ?? name, undefined, name)] : sizeCandidates(it.item_weight ?? name, undefined, name);
+  const c = chooseQuantity(candidates, price, item);
+  return c ? { dealType: 'fixed_price', price, quantity: c.quantity, unit: c.unit, conditions } : null;
 }
 
 export const flippAdapter: Adapter = {
@@ -111,7 +110,7 @@ export const flippAdapter: Adapter = {
       const results = await flippSearch(postal, item.aliases[0] ?? item.displayName.toLowerCase());
       for (const it of results) {
         if (String(it.merchant_id) !== String(merchantId)) continue;
-        if (!it.name || !matchesItem(it.name, item)) continue;
+        if (!it.name || !nameMatchesItem(it.name, item)) continue;
         const key = String(it.flyer_item_id ?? it.id ?? `${it.name}|${it.current_price}`);
         if (seen.has(key)) continue;
         seen.add(key);

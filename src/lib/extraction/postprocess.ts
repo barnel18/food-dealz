@@ -168,7 +168,10 @@ export function postprocess(raw: Array<ExtractedDeal & { image_url?: string | nu
     const unitPrice = comparable
       ? computeUnitPrice({ dealType, price, regularPrice: regular, percentOff: percent, quantity, unit: d.unit }, comparable)
       : null;
-    if (unitPrice != null && (unitPrice < UNIT_PRICE_SANE.min || unitPrice > UNIT_PRICE_SANE.max)) {
+    const range = slug ? CANONICAL_ITEM_BY_SLUG.get(slug)?.unitPriceRange : undefined;
+    if (unitPrice != null && range && (unitPrice < range[0] || unitPrice > range[1])) {
+      reasons.push(`unit price ${unitPrice} outside plausible ${range[0]}–${range[1]} per ${comparable}`);
+    } else if (unitPrice != null && (unitPrice < UNIT_PRICE_SANE.min || unitPrice > UNIT_PRICE_SANE.max)) {
       reasons.push(`unit price ${unitPrice} outside sane range`);
     }
 

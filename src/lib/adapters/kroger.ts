@@ -1,4 +1,5 @@
 import type { BusinessRow } from '@/lib/deals/types';
+import { computeUnitPrice } from '@/lib/deals/unit-price';
 import { CANONICAL_ITEMS, type CanonicalItem, type UnitKind } from '@/lib/taxonomy/canonical-items';
 import { AdapterError, requireEnv, type Adapter, type CaptureCandidate, type CrawlResult, type SourceRow, type StructuredDeal } from './types';
 
@@ -69,35 +70,68 @@ function toUnit(n: number, u: string): { quantity: number; unit: UnitKind } {
 }
 
 /**
- * Kroger sizes: "16 oz", "1 lb", "12 ct", "64 fl oz", "3 ct / 1 lb", "8 ct / 30.4 ounce".
- * For "N ct / X unit" the second part is the total unless the description states a bigger
- * total (e.g. "Ground Beef Packs 3 LB" with size "3 ct / 1 lb" → 3 lb).
+ * All plausible readings of a Kroger size string, most likely first.
+ * "4 ct / 5.3 oz" → [21.2 oz (per-unit × count), 5.3 oz (total)]; "3 ct / 1 lb" + "3 LB" in description → [3 lb, …].
  */
-export function parseKrogerSize(size: string | undefined, soldBy: string | undefined, description = ''): { quantity: number; unit: UnitKind } {
+export function sizeCandidates(size: string | undefined, soldBy: string | undefined, description = ''): Array<{ quantity: number; unit: UnitKind }> {
   const s = (size ?? '').toLowerCase().trim();
-  if (soldBy?.toUpperCase() === 'WEIGHT' && !/\d/.test(s)) return { quantity: 1, unit: 'lb' };
+  if (soldBy?.toUpperCase() === 'WEIGHT' && !/\d/.test(s)) return [{ quantity: 1, unit: 'lb' }];
   const parts = s.split('/').map((x) => x.trim());
   const parsed = parts.map((x) => x.match(UNIT_RE)).filter((m): m is RegExpMatchArray => m !== null).map((m) => toUnit(Number(m[1]), m[2].replace(/\s+/g, ' ')));
   const measured = parsed.find((x) => x.unit !== 'each' && x.unit !== 'pack');
   const counted = parsed.find((x) => x.unit === 'each');
+  const out: Array<{ quantity: number; unit: UnitKind }> = [];
   const desc = description.toLowerCase().match(/(\d+(?:\.\d+)?)\s*(lb|lbs|pound|pounds|oz|ounce|ounces)\b/);
   if (desc && measured) {
     const d = toUnit(Number(desc[1]), desc[2]);
-    if (d.unit === measured.unit && d.quantity > measured.quantity) return d;
+    if (d.unit === measured.unit && d.quantity > measured.quantity) out.push(d);
   }
-  if (measured) return measured;
-  if (counted) return counted;
-  return { quantity: 1, unit: 'each' };
+  if (measured && counted && counted.quantity > 1) out.push({ quantity: measured.quantity * counted.quantity, unit: measured.unit });
+  if (measured) out.push(measured);
+  if (counted) out.push(counted);
+  if (out.length === 0) out.push({ quantity: 1, unit: 'each' });
+  return out;
+}
+
+/** Backwards-compatible single reading (first candidate). */
+export function parseKrogerSize(size: string | undefined, soldBy: string | undefined, description = ''): { quantity: number; unit: UnitKind } {
+  return sizeCandidates(size, soldBy, description)[0];
+}
+
+/**
+ * Pick the package reading whose unit price is plausible for the item. Items compared "each"
+ * are priced per package regardless of weight. Returns null when nothing is plausible.
+ */
+export function chooseQuantity(
+  candidates: Array<{ quantity: number; unit: UnitKind }>,
+  price: number,
+  item: CanonicalItem,
+): { quantity: number; unit: UnitKind; unitPrice: number | null } | null {
+  if (item.comparableUnit === 'each' && !candidates.some((c) => c.unit === 'each' || c.unit === 'dozen')) {
+    candidates = [{ quantity: 1, unit: 'each' }, ...candidates];
+  }
+  const range = item.unitPriceRange;
+  let fallback: { quantity: number; unit: UnitKind; unitPrice: number | null } | null = null;
+  for (const c of candidates) {
+    const up = computeUnitPrice({ dealType: 'fixed_price', price, regularPrice: null, percentOff: null, quantity: c.quantity, unit: c.unit }, item.comparableUnit);
+    const cand = { ...c, unitPrice: up };
+    if (up == null) { fallback ??= cand; continue; }
+    if (!range || (up >= range[0] && up <= range[1])) return cand;
+    fallback ??= cand;
+  }
+  return range && fallback?.unitPrice != null ? null : fallback;
+}
+
+/** Name contains one of the item's terms as a whole word and none of its exclusion words. */
+export function nameMatchesItem(name: string, item: CanonicalItem): boolean {
+  const n = ` ${name.toLowerCase().replace(/[^a-z0-9%/ ]/g, ' ')} `;
+  if ((item.excludes ?? []).some((x) => n.includes(` ${x} `) || n.includes(x))) return false;
+  const terms = [item.displayName.toLowerCase(), ...item.aliases].map((t) => t.split(' (')[0]);
+  return terms.some((t) => t.length >= 3 && n.includes(` ${t} `)) || terms.some((t) => t.split(' ').length >= 2 && n.includes(t));
 }
 
 function searchTerm(item: CanonicalItem): string {
   return item.aliases[0] ?? item.displayName.toLowerCase();
-}
-
-function matchesItem(product: KrogerProduct, item: CanonicalItem): boolean {
-  const desc = (product.description ?? '').toLowerCase();
-  const terms = [item.displayName.toLowerCase(), ...item.aliases];
-  return terms.some((t) => t.length >= 4 && desc.includes(t.split(' ')[0]));
 }
 
 export const krogerAdapter: Adapter = {
@@ -125,8 +159,10 @@ export const krogerAdapter: Adapter = {
         const regular = it?.price?.regular ?? null;
         const promo = it?.price?.promo ?? null;
         if (!it || promo == null || promo <= 0 || regular == null || promo >= regular) continue;
-        if (!matchesItem(p, item)) continue;
-        const { quantity, unit } = parseKrogerSize(it.size, it.soldBy, p.description ?? '');
+        if (!nameMatchesItem(p.description ?? '', item)) continue;
+        const chosen = chooseQuantity(sizeCandidates(it.size, it.soldBy, p.description ?? ''), promo, item);
+        if (!chosen) continue;
+        const { quantity, unit } = chosen;
         const title = `${p.description ?? item.displayName}${it.size ? ` (${it.size})` : ''}`.slice(0, 120);
         const structured: StructuredDeal = {
           title,
