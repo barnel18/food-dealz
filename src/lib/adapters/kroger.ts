@@ -73,8 +73,8 @@ function toUnit(n: number, u: string): { quantity: number; unit: UnitKind } {
  * All plausible readings of a Kroger size string, most likely first.
  * "4 ct / 5.3 oz" → [21.2 oz (per-unit × count), 5.3 oz (total)]; "3 ct / 1 lb" + "3 LB" in description → [3 lb, …].
  */
-export function sizeCandidates(size: string | undefined, soldBy: string | undefined, description = ''): Array<{ quantity: number; unit: UnitKind }> {
-  const s = (size ?? '').toLowerCase().trim();
+export function sizeCandidates(size: string | null | undefined, soldBy: string | undefined, description = ''): Array<{ quantity: number; unit: UnitKind }> {
+  const s = (typeof size === 'string' ? size : '').toLowerCase().trim();
   if (soldBy?.toUpperCase() === 'WEIGHT' && !/\d/.test(s)) return [{ quantity: 1, unit: 'lb' }];
   const parts = s.split('/').map((x) => x.trim());
   const parsed = parts.map((x) => x.match(UNIT_RE)).filter((m): m is RegExpMatchArray => m !== null).map((m) => toUnit(Number(m[1]), m[2].replace(/\s+/g, ' ')));

@@ -53,7 +53,7 @@ export interface PostprocessResult {
 }
 
 /** Sources trusted enough to publish without a human when the checks pass. */
-const AUTO_APPROVE_SOURCES: ReadonlySet<SourceType> = new Set(['website', 'kroger_api', 'business_portal', 'manual']);
+const AUTO_APPROVE_SOURCES: ReadonlySet<SourceType> = new Set(['website', 'kroger_api', 'flipp', 'business_portal', 'manual']);
 const UNIT_PRICE_SANE = { min: 0.05, max: 500 };
 
 const num = (v: unknown): number | null => {

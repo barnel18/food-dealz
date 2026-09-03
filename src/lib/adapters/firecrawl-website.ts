@@ -40,6 +40,7 @@ export const firecrawlWebsiteAdapter: Adapter = {
         timeout: 60_000,
       }),
     });
+    if (res.status === 402) throw new AdapterError('firecrawl 402: out of credits', true, 'quota');
     if (res.status === 429 || res.status >= 500) throw new AdapterError(`firecrawl ${res.status}`, true);
     const json = (await res.json().catch(() => null)) as ScrapeResponse | null;
     if (!res.ok || !json?.success || !json.data) {

@@ -57,3 +57,18 @@ describe('nameMatchesItem', () => {
     expect(nameMatchesItem('Ground Beef Seasoning Mix', beef)).toBe(false);
   });
 });
+
+describe('sizeCandidates input hardening', () => {
+  it('tolerates non-string sizes from third-party feeds', () => {
+    expect(sizeCandidates(12 as unknown as string, undefined, 'Bananas')).toEqual([{ quantity: 1, unit: 'each' }]);
+    expect(sizeCandidates(null, undefined, 'Bananas')).toEqual([{ quantity: 1, unit: 'each' }]);
+    expect(sizeCandidates({} as unknown as string, 'WEIGHT', 'Ground Beef')).toEqual([{ quantity: 1, unit: 'lb' }]);
+  });
+  it('excludes prepared products from produce and seafood items', () => {
+    expect(nameMatchesItem('Taylor Farms Avocado Ranch Chopped Salad Kit', CANONICAL_ITEM_BY_SLUG.get('avocado')!)).toBe(false);
+    expect(nameMatchesItem('Hass Avocados, 4 ct bag', CANONICAL_ITEM_BY_SLUG.get('avocado')!)).toBe(true);
+    expect(nameMatchesItem('Tru Fru Frozen Blueberries in Dark & White Chocolate', CANONICAL_ITEM_BY_SLUG.get('berries_lb')!)).toBe(false);
+    expect(nameMatchesItem('Kroger Crunchy Butterfly Shrimp Frozen', CANONICAL_ITEM_BY_SLUG.get('shrimp_lb')!)).toBe(false);
+    expect(nameMatchesItem('Kroger Raw Shrimp Peeled & Deveined 31-40 ct', CANONICAL_ITEM_BY_SLUG.get('shrimp_lb')!)).toBe(true);
+  });
+});

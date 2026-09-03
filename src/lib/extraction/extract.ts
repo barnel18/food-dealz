@@ -89,7 +89,7 @@ export async function extractDeals(input: ExtractionInput): Promise<ExtractionRe
   try {
     const res = await getClient().messages.parse({
       model: process.env.EXTRACTION_MODEL || DEFAULT_MODEL,
-      max_tokens: 4096,
+      max_tokens: 16384,
       system: [{ type: 'text', text: buildSystemPrompt(input.category), cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content }],
       output_config: { format: zodOutputFormat(buildExtractionSchema(input.category)), effort: effort() },

@@ -71,12 +71,13 @@ const num = (v: unknown): number | null => {
 export function interpretFlipp(it: FlippItem, item: CanonicalItem): { dealType: StructuredDeal['deal_type']; price: number | null; quantity: number; unit: UnitKind; conditions: string | null } | null {
   const texts = `${it.pre_price_text ?? ''} ${it.post_price_text ?? ''} ${it.sale_story ?? ''}`.toLowerCase();
   const name = it.name ?? '';
+  const weight = typeof it.item_weight === 'string' && it.item_weight.trim() ? it.item_weight : name;
   const price = num(it.current_price);
   const conditions = [it.sale_story, it.pre_price_text, it.post_price_text].map((s) => (s ?? '').trim()).filter(Boolean).join(' · ') || null;
   const nFor = texts.match(/(\d+)\s*(?:for|\/)\s*\$?\s*(\d+(?:\.\d+)?)/) ?? name.toLowerCase().match(/(\d+)\s*for\s*\$(\d+(?:\.\d+)?)/);
 
   if (/buy\s*(one|1)[^a-z]*get\s*(one|1)\s*free|bogo/.test(texts) && price) {
-    const c = chooseQuantity(sizeCandidates(it.item_weight ?? name, undefined, name), price, item);
+    const c = chooseQuantity(sizeCandidates(weight, undefined, name), price, item);
     return c ? { dealType: 'bogo', price, quantity: c.quantity, unit: c.unit, conditions } : null;
   }
   if (nFor) {
@@ -84,14 +85,14 @@ export function interpretFlipp(it: FlippItem, item: CanonicalItem): { dealType: 
     const total = Number(nFor[2]);
     if (qty > 0 && total > 0) {
       const perOne = total / qty;
-      const c = chooseQuantity(sizeCandidates(it.item_weight ?? name, undefined, name), perOne, item);
+      const c = chooseQuantity(sizeCandidates(weight, undefined, name), perOne, item);
       if (!c) return null;
       return { dealType: 'bundle', price: total, quantity: c.unit === 'each' ? qty : c.quantity * qty, unit: c.unit, conditions };
     }
   }
   if (!price) return null;
   const perLb = /per\s*lb|\/\s*lb|\blb\b\.?$|pound/.test(texts);
-  const candidates = perLb ? [{ quantity: 1, unit: 'lb' as UnitKind }, ...sizeCandidates(it.item_weight ?? name, undefined, name)] : sizeCandidates(it.item_weight ?? name, undefined, name);
+  const candidates = perLb ? [{ quantity: 1, unit: 'lb' as UnitKind }, ...sizeCandidates(weight, undefined, name)] : sizeCandidates(weight, undefined, name);
   const c = chooseQuantity(candidates, price, item);
   return c ? { dealType: 'fixed_price', price, quantity: c.quantity, unit: c.unit, conditions } : null;
 }

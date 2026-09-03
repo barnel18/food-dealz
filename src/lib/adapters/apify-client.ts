@@ -17,7 +17,7 @@ export async function runActor<T>(actor: string, input: unknown, opts: RunOption
   const start = await fetch(`https://api.apify.com/v2/acts/${actor}/runs?timeout=${timeoutSec}&memory=${opts.memoryMb ?? 1024}`, {
     method: 'POST', headers, body: JSON.stringify(input),
   });
-  if (!start.ok) throw new AdapterError(`apify start ${start.status}: ${(await start.text()).slice(0, 200)}`, start.status === 429 || start.status >= 500);
+  if (!start.ok) throw new AdapterError(`apify start ${start.status}: ${(await start.text()).slice(0, 200)}`, start.status === 429 || start.status >= 500, start.status === 402 || start.status === 403 ? 'quota' : 'other');
   const { data: run } = (await start.json()) as { data: { id: string; status: string; defaultDatasetId: string } };
 
   const deadline = Date.now() + (timeoutSec + 90) * 1000;

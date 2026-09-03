@@ -59,8 +59,11 @@ export interface Adapter {
   crawl(source: SourceRow, business: BusinessRow): Promise<CrawlResult>;
 }
 
+export type AdapterErrorKind = 'other' | 'quota';
+
 export class AdapterError extends Error {
-  constructor(message: string, readonly retryable: boolean) {
+  /** `quota`: the provider is refusing for billing/usage reasons — not the source's fault, so it must not count toward auto-disable. */
+  constructor(message: string, readonly retryable: boolean, readonly kind: AdapterErrorKind = 'other') {
     super(message);
     this.name = 'AdapterError';
   }

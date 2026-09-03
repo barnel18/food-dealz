@@ -84,6 +84,11 @@ export async function handleCrawlSource(db: SupabaseClient, payload: Record<stri
     }
     return `${rows.length} captured, ${inserted.length} new${result.unchanged ? ' (unchanged)' : ''}${result.note ? ` — ${result.note}` : ''}`;
   } catch (e) {
+    if (e instanceof AdapterError && e.kind === 'quota') {
+      // Provider quota/billing block: leave the failure counter alone so the source is not auto-disabled.
+      await db.from('sources').update({ last_crawled_at: new Date().toISOString() }).eq('id', src.id);
+      throw e;
+    }
     const failures = (src.consecutive_failures ?? 0) + 1;
     await db
       .from('sources')
