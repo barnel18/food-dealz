@@ -10,7 +10,7 @@ import { SetupNotice } from '@/components/setup-notice';
 import { getCurrentUser } from '@/lib/auth/dal';
 import { getCity, nearestNeighborhood } from '@/lib/cities';
 import { fromDetail } from '@/lib/deals/card-data';
-import { categoryLabel, formatDistance, relativeTime, sourceLabel } from '@/lib/deals/format';
+import { categoryLabel, formatDistance, relativeTime } from '@/lib/deals/format';
 import { getBusinessBySlug, getSavedDealIds } from '@/lib/deals/queries';
 import type { SourceType } from '@/lib/deals/types';
 import { publicEnv } from '@/lib/env';
@@ -27,6 +27,18 @@ export async function generateMetadata(props: PageProps<'/b/[slug]'>): Promise<M
 }
 
 const PILL = 'inline-flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-sm font-medium hover:border-brand hover:text-brand';
+const PRIMARY = 'inline-flex h-10 items-center gap-2 rounded-full bg-brand px-4 text-sm font-semibold text-white shadow-sm hover:bg-brand-strong';
+
+/** "Deals come from their website and Instagram" — short nouns, not the feed labels. */
+const SOURCE_NOUN: Partial<Record<SourceType, string>> = {
+  website: 'website', instagram: 'Instagram', flipp: 'weekly ad', kroger_api: 'store price feed', facebook: 'Facebook', google_posts: 'Google posts', business_portal: 'own postings', manual: 'our team',
+};
+function sourceSentence(types: SourceType[]): string | null {
+  const nouns = types.map((t) => SOURCE_NOUN[t]).filter((n): n is string => !!n);
+  if (nouns.length === 0) return null;
+  const list = nouns.length === 1 ? nouns[0] : `${nouns.slice(0, -1).join(', ')} and ${nouns[nouns.length - 1]}`;
+  return `Deals come from their ${list}`;
+}
 
 export default async function BusinessPage(props: PageProps<'/b/[slug]'>) {
   const { slug } = await props.params;
@@ -82,7 +94,7 @@ export default async function BusinessPage(props: PageProps<'/b/[slug]'>) {
             {distanceM != null && <> · {formatDistance(distanceM)} from you</>}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <a href={mapsHref} target="_blank" rel="noopener" className={`${PILL} border-brand bg-brand text-white hover:bg-brand-strong hover:text-white`}>
+            <a href={mapsHref} target="_blank" rel="noopener" className={PRIMARY}>
               <MapPinIcon className="h-4 w-4" /> Directions
             </a>
             {b.website_url && (
@@ -95,10 +107,10 @@ export default async function BusinessPage(props: PageProps<'/b/[slug]'>) {
               <a href={`tel:${b.phone}`} className={PILL}><PhoneIcon className="h-4 w-4" /> {b.phone}</a>
             )}
           </div>
-          {(sources.length > 0 || profile?.last_checked_at) && (
+          {(sourceSentence(sources) || profile?.last_checked_at) && (
             <p className="mt-4 text-xs text-muted">
-              {sources.length > 0 && <>Deals come from their {sources.map(sourceLabel).map((s) => s.toLowerCase()).join(', ')}</>}
-              {profile?.last_checked_at && <> · checked {relativeTime(profile.last_checked_at)}</>}
+              {sourceSentence(sources)}
+              {profile?.last_checked_at && <>{sourceSentence(sources) ? ' · ' : ''}Checked {relativeTime(profile.last_checked_at)}</>}
             </p>
           )}
         </div>

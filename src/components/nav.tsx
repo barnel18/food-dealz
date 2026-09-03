@@ -11,7 +11,7 @@ export function Nav() {
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand text-lg text-white">$</span>
-            <span>Food Dealz</span>
+            <span className="hidden sm:inline">Food Dealz</span>
           </Link>
           <div className="hidden md:block">
             <NavTabs variant="top" />

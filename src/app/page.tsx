@@ -44,8 +44,8 @@ export default async function HomePage() {
           <img src={heroMap} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/25" />
-        <div className="relative grid gap-6 p-5 sm:p-8 md:grid-cols-[1.2fr_1fr] md:items-end">
-          <div>
+        <div className="relative grid gap-6 p-5 sm:p-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] md:items-end">
+          <div className="min-w-0">
             <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-deal" /> You’re in {city.name}, {city.stateCode}
             </p>
@@ -59,7 +59,7 @@ export default async function HomePage() {
             </form>
             <NeighborhoodChips neighborhoods={city.neighborhoods} activeLabel={location.label} nextPath="/places" tone="onDark" className="mt-4" />
           </div>
-          <div className="rounded-2xl bg-white/95 p-4 text-foreground shadow-lg backdrop-blur dark:bg-black/70 dark:text-white">
+          <div className="min-w-0 rounded-2xl bg-white/95 p-4 text-foreground shadow-lg backdrop-blur dark:bg-black/70 dark:text-white">
             <h2 className="mb-2 text-sm font-semibold">Where are you right now?</h2>
             <LocationPicker initial={saved} presets={MADISON_PRESETS} />
           </div>

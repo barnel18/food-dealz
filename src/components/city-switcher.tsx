@@ -27,7 +27,7 @@ export function CitySwitcher({ cities, current }: { cities: City[]; current: Cit
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-semibold hover:border-brand hover:text-brand"
+        className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-surface px-3 text-sm font-semibold hover:border-brand hover:text-brand"
       >
         <MapPinIcon className="h-4 w-4 text-brand" />
         {current.name}, {current.stateCode}

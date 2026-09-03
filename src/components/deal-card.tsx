@@ -22,7 +22,9 @@ export function DealCard({
   const headline = dealHeadline(deal);
   const unitLine = unitPriceLine(deal);
   const validity = formatValidity(deal);
-  const visual = deal.imageUrl ? 'product' : deal.business.photoUrl ? 'photo' : 'logo';
+  // In mixed lists the storefront photo identifies the place; on that place's own page it would repeat on every tile,
+  // so specials without a product photo get a big price panel instead.
+  const visual = deal.imageUrl ? 'product' : showBusiness ? (deal.business.photoUrl ? 'photo' : 'logo') : 'price';
 
   return (
     <article className={cn('group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition hover:-translate-y-0.5 hover:shadow-md', deal.isFeatured && 'border-accent/60', className)}>
@@ -43,10 +45,20 @@ export function DealCard({
             <BusinessAvatar name={deal.business.name} logoUrl={deal.business.logoUrl} size={72} className="rounded-2xl shadow-sm" />
           </div>
         )}
-        <div className="absolute bottom-2.5 left-2.5 rounded-xl bg-white/95 px-2.5 py-1.5 shadow-md dark:bg-black/80">
-          <div className="text-lg font-bold leading-none text-deal">{headline}</div>
-          {unitLine && <div className="mt-0.5 text-[11px] font-medium text-muted">{unitLine}</div>}
-        </div>
+        {visual === 'price' && (
+          <div className="grid h-full w-full place-items-center bg-gradient-to-br from-deal-soft to-surface-2 px-3 text-center">
+            <div>
+              <div className="text-3xl font-bold leading-none text-deal sm:text-4xl">{headline}</div>
+              {unitLine && <div className="mt-1.5 text-xs font-medium text-muted">{unitLine}</div>}
+            </div>
+          </div>
+        )}
+        {visual !== 'price' && (
+          <div className="absolute bottom-2.5 left-2.5 rounded-xl bg-white/95 px-2.5 py-1.5 shadow-md dark:bg-black/80">
+            <div className="text-lg font-bold leading-none text-deal">{headline}</div>
+            {unitLine && <div className="mt-0.5 text-[11px] font-medium text-muted">{unitLine}</div>}
+          </div>
+        )}
         {validity && (
           <span className="absolute left-2.5 top-2.5 rounded-full bg-black/55 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur">{validity}</span>
         )}
