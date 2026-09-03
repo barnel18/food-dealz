@@ -8,6 +8,7 @@
 import { loadEnv } from '../worker/env';
 loadEnv();
 import { runActor } from '../src/lib/adapters/apify-client';
+import { haversineM } from '../src/lib/geo/distance';
 import { FOOD_POI_RE, poiSearch } from '../src/lib/geo/mapbox';
 import { createServiceClient } from '../src/lib/supabase/service-client';
 
@@ -24,6 +25,18 @@ function inBbox(lat: number, lng: number): boolean {
   return lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
 }
 const slugify = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+
+// Generic words that appear in most venue names and must not count as a match on their own.
+const STOP = new Set(['the', 'and', 'bar', 'grill', 'restaurant', 'cafe', 'madison', 'wisconsin', 'llc', 'inc', 'co', 'company', 'shop', 'kitchen', 'lounge', 'pub', 'market', 'food', 'hall', 'wi']);
+const nameTokens = (s: string) => new Set(s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter((t) => t.length > 1 && !STOP.has(t)));
+/** True when the distinctive words of two venue names mostly overlap ("Ático Lounge - Madison" ↔ "Ático Lounge"; not "Silver Eagle" ↔ "Golden Eagle Barneveld"). */
+export function namesMatch(a: string, b: string): boolean {
+  const A = nameTokens(a), B = nameTokens(b);
+  if (!A.size || !B.size) return false;
+  let hit = 0;
+  for (const t of A) if (B.has(t)) hit++;
+  return hit / Math.min(A.size, B.size) >= 0.5;
+}
 
 async function main() {
   const tags = process.argv.slice(2).length ? process.argv.slice(2) : DEFAULT_TAGS;
@@ -52,6 +65,7 @@ async function main() {
   console.log(`Profiling ${candidates.length} accounts…`);
   const profiles = await runActor<Profile>('apify~instagram-profile-scraper', { usernames: candidates }, { timeoutSec: 600 });
   let added = 0;
+  let attached = 0;
   const skipped: string[] = [];
   for (const pr of profiles) {
     const u = pr.username?.toLowerCase();
@@ -62,10 +76,23 @@ async function main() {
     const localish = /madison|wisconsin|\bwi\b|608|middleton|fitchburg|verona|sun prairie|monona|waunakee/i.test(`${bio} ${name}`);
     const foodish = FOOD_RE.test(cat) || FOOD_RE.test(bio) || FOOD_RE.test(name);
     if (!foodish || SKIP_CATEGORY.test(cat)) { skipped.push(`${u} (${cat || 'no category'}: not food)`); continue; }
-    // Verify it is a real place: Mapbox POI search by name near downtown, must be a food category inside the bbox.
+    // Verify it is a real place: Mapbox POI search by name near downtown, must be a food category inside the bbox
+    // AND carry the same distinctive name (Mapbox happily returns "Silver Eagle" for "Golden Eagle Barneveld").
     const pois = await poiSearch(`${name}`, token, { lat: 43.0731, lng: -89.4012 }).catch(() => [] as Awaited<ReturnType<typeof poiSearch>>[number][]);
-    const hit = pois.find((r) => inBbox(r.lat, r.lng) && (r.categories.some((c) => FOOD_POI_RE.test(c)) || r.categories.length === 0));
+    const hit = pois.find((r) => inBbox(r.lat, r.lng) && (r.categories.some((c) => FOOD_POI_RE.test(c)) || r.categories.length === 0) && (namesMatch(name, r.name) || namesMatch(u, r.name)));
     if (!hit) { skipped.push(`${u} (${name}: ${localish ? 'no matching place in Madison' : 'not local'})`); continue; }
+    // Already seeded (OSM/Reddit/Kroger)? Attach the handle to that business instead of creating a duplicate.
+    const firstWord = [...nameTokens(hit.name)][0] ?? hit.name.split(/\s+/)[0];
+    const { data: near } = await db.from('businesses').select('id,name,lat,lng').ilike('name', `%${firstWord}%`).limit(25);
+    const dup = ((near ?? []) as { id: string; name: string; lat: number | null; lng: number | null }[])
+      .find((b) => b.lat != null && b.lng != null && haversineM(b.lat, b.lng, hit.lat, hit.lng) < 150 && namesMatch(b.name, hit.name));
+    if (dup) {
+      const { error: se } = await db.from('sources').insert({ business_id: dup.id, type: 'instagram', handle: u, crawl_interval_hours: 24, notes: `discovered via #${tags[0]} · ${cat} · ${pr.followersCount ?? '?'} followers` });
+      if (se) { skipped.push(`${u} (attach to ${dup.name} failed: ${se.message})`); continue; }
+      attached++;
+      console.log(`  ~ ${dup.name} (@${u}) — handle attached to existing business`);
+      continue;
+    }
     const isGrocery = /grocery|supermarket|co-op|coop/i.test(`${cat} ${name} ${hit.categories.join(' ')}`) && !/restaurant|bar|cafe/i.test(cat);
     let slug = slugify(name) || u;
     const { data: clash } = await db.from('businesses').select('id').eq('slug', slug).maybeSingle();
@@ -79,7 +106,7 @@ async function main() {
     added++;
     console.log(`  + ${hit.name} (@${u}) — ${cat || hit.categories.slice(0, 2).join('/')} — ${hit.label}`);
   }
-  console.log(`\n${added} businesses added (inactive, awaiting review). Skipped ${skipped.length}:`);
+  console.log(`\n${added} businesses added (inactive, awaiting review), ${attached} handles attached to existing businesses. Skipped ${skipped.length}:`);
   for (const s of skipped) console.log(`  - ${s}`);
 }
 main().catch((e) => { console.error(e instanceof Error ? e.message : e); process.exit(1); });
