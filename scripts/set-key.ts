@@ -62,13 +62,24 @@ async function setOne(name: string, env: string): Promise<string> {
   console.log(`\n${name}${info ? ` — ${info.hint}` : ''}`);
   if (info) console.log(`  get it at: ${info.url}`);
   console.log(`  currently: ${isPlaceholder(existing) ? 'not set' : mask(existing)}`);
-  const value = await ask('  paste it here and press Enter (Enter alone = skip): ');
+  let value = await ask('  paste it here and press Enter (Enter alone = skip): ');
   if (!value) {
     console.log('  skipped');
     return env;
   }
   if (info?.prefix && !value.startsWith(info.prefix)) {
     console.log(`  warning: expected this to start with "${info.prefix}" — saved anyway, double-check it`);
+  }
+  // Common slip: pasting the whole connection string instead of the password. Pull the password out.
+  if (name === 'SUPABASE_DB_PASSWORD' && /^postgres(ql)?:\/\//.test(value)) {
+    const m = value.match(/^postgres(?:ql)?:\/\/[^:]+:([^@]*)@/);
+    const inner = m ? decodeURIComponent(m[1]) : '';
+    if (!inner || /YOUR-PASSWORD|\[.*\]/.test(inner)) {
+      console.log('  that is a connection string with a [YOUR-PASSWORD] placeholder — paste just the password');
+      return env;
+    }
+    value = inner;
+    console.log('  you pasted a connection string; extracted the password from it');
   }
   let next = setValue(env, name, value);
   if (name === 'SUPABASE_DB_PASSWORD') {
