@@ -14,6 +14,8 @@ export interface SourceRow {
   consecutive_failures: number;
   is_active: boolean;
   notes: string | null;
+  /** Deals from this source are copied to every active business with the same chain_key (chain offers pages). */
+  fan_out?: boolean;
 }
 
 /** A deal the adapter already understands (no LLM needed), e.g. from a retailer price API. */

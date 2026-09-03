@@ -33,7 +33,7 @@ export async function handleCrawlSource(db: SupabaseClient, payload: Record<stri
       content_hash: contentHash(c.content_text, c.image_urls),
       content_text: c.content_text,
       image_urls: c.image_urls,
-      payload: { ...c.payload, structured: c.structured ?? null },
+      payload: { ...c.payload, structured: c.structured ?? null, ...(src.fan_out ? { chain_fanout: true } : {}) },
       posted_at: c.posted_at,
     }));
 

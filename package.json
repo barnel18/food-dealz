@@ -32,7 +32,8 @@
     "crawl:type": "tsx scripts/enqueue-by-type.ts",
     "deals:prune": "tsx scripts/prune-mismatched.ts",
     "deals:apply": "tsx scripts/apply-review.ts",
-    "google:sync": "tsx scripts/google-sync.ts"
+    "google:sync": "tsx scripts/google-sync.ts",
+    "chains:sync": "tsx scripts/sync-chains.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
