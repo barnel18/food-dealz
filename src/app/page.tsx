@@ -20,12 +20,14 @@ export default async function HomePage() {
   const city = getCity();
   const saved = await getLocation();
   const { location, isDefault } = await getLocationOrDefault();
-  const [{ data: placeRows }, { data: dealRows }, { data: top }, user] = await Promise.all([
+  const [{ data: placeRows }, { data: topRated }, { data: dealRows }, { data: top }, user] = await Promise.all([
     getPlacesInRadius(location, { withDeals: true, limit: 10 }),
+    getPlacesInRadius(location, { sort: 'rating', limit: 10 }),
     getDealsInRadius(location, { limit: 8, perBusiness: 1 }),
     getCheapestByItem(location, null),
     getCurrentUser(),
   ]);
+  const rated = topRated.filter((p) => p.rating != null && (p.review_count ?? 0) >= 50);
   const savedIds = user ? await getSavedDealIds(user.id) : new Set<string>();
   const deals = dealRows.map(fromRadiusRow);
   const teaser = top.slice(0, 6);
@@ -82,6 +84,18 @@ export default async function HomePage() {
           </div>
         )}
       </section>
+
+      {rated.length >= 4 && (
+        <section className="mt-10">
+          <div className="mb-3 flex items-end justify-between">
+            <h2 className="text-xl font-semibold">Top rated near {hereLabel}</h2>
+            <Link href="/places?sort=rating" className="text-sm font-medium text-brand hover:underline">See all <ChevronRightIcon className="inline h-4 w-4" /></Link>
+          </div>
+          <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+            {rated.map((p) => <PlaceCard key={p.business_id} place={p} compact className="w-56 shrink-0 snap-start sm:w-64" />)}
+          </div>
+        </section>
+      )}
 
       {deals.length > 0 && (
         <section className="mt-10">

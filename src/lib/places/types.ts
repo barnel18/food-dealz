@@ -21,6 +21,35 @@ export interface PlaceRow {
   instagram_handle: string | null;
   is_featured: boolean;
   last_seen_at: string | null;
+  rating: number | null;
+  review_count: number | null;
+  price_level: number | null;
+  cuisines: string[];
+  primary_type: string | null;
+  hours: OpeningHours | null;
+  open_now: boolean | null;
+  photo_count: number;
+}
+
+/** Google-style opening hours stored on `businesses.hours`. Day 0 = Sunday, local time (America/Chicago). */
+export interface OpeningHours {
+  periods: Array<{ open: { day: number; hour: number; minute?: number }; close?: { day: number; hour: number; minute?: number } }>;
+  weekdayDescriptions?: string[];
+}
+
+export interface PlacePhoto { url: string; width: number; height: number; attribution: string | null; attribution_uri: string | null }
+
+export interface BusinessReview {
+  id: string;
+  business_id: string;
+  source: string;
+  author_name: string | null;
+  author_uri: string | null;
+  author_photo: string | null;
+  rating: number | null;
+  text: string | null;
+  published_at: string | null;
+  relative_time: string | null;
 }
 
 export interface BusinessPost {

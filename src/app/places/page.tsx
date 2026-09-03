@@ -10,7 +10,8 @@ import { SetupNotice } from '@/components/setup-notice';
 import { getCity } from '@/lib/cities';
 import { metersToMiles } from '@/lib/location/cookie';
 import { getLocationOrDefault } from '@/lib/location/server';
-import { getPlacesInRadius } from '@/lib/places/queries';
+import { CUISINE_BY_SLUG, cuisineChips } from '@/lib/places/cuisines';
+import { getPlacesInRadius, type PlaceSort } from '@/lib/places/queries';
 import type { BusinessCategory } from '@/lib/taxonomy/canonical-items';
 import { cn } from '@/lib/utils/cn';
 
@@ -40,19 +41,26 @@ export default async function PlacesPage(props: PageProps<'/places'>) {
   const category: BusinessCategory | null = cat === 'restaurant' || cat === 'grocery' ? cat : null;
   const query = (first(sp.q) ?? '').trim().slice(0, 80) || null;
   const withDeals = first(sp.deals) === '1';
+  const openNow = first(sp.open) === '1';
+  const cuisineParam = first(sp.cuisine);
+  const cuisine = cuisineParam && CUISINE_BY_SLUG.has(cuisineParam) ? cuisineParam : null;
+  const sortParam = first(sp.sort);
+  const sort: PlaceSort = sortParam === 'distance' || sortParam === 'rating' || sortParam === 'deals' ? sortParam : 'best';
   const view = first(sp.view) === 'map' ? 'map' : 'grid';
   const offset = Math.max(0, parseInt(first(sp.offset) ?? '0', 10) || 0);
   const city = getCity();
 
   const { location, isDefault } = await getLocationOrDefault();
   const { data: places, error } = await getPlacesInRadius(location, {
-    category, query, withDeals,
+    category, query, withDeals, cuisine, openNow, sort,
     limit: view === 'map' ? 300 : PAGE_SIZE,
     offset: view === 'map' ? 0 : offset,
   });
-  const base = { cat: category, q: query, deals: withDeals ? '1' : null, view: view === 'map' ? 'map' : null };
+  const base = { cat: category, q: query, deals: withDeals ? '1' : null, open: openNow ? '1' : null, cuisine, sort: sort === 'best' ? null : sort, view: view === 'map' ? 'map' : null };
   const miles = Math.round(metersToMiles(location.radiusM));
   const withDealCount = places.filter((p) => p.deal_count > 0).length;
+  const chips = cuisineChips(category);
+  const SORTS: Array<{ key: PlaceSort; label: string }> = [{ key: 'best', label: 'Best match' }, { key: 'rating', label: 'Top rated' }, { key: 'deals', label: 'Most deals' }, { key: 'distance', label: 'Nearest' }];
 
   return (
     <div className="pb-8">
@@ -71,6 +79,7 @@ export default async function PlacesPage(props: PageProps<'/places'>) {
           <Chip to={href({ ...base, cat: 'restaurant' })} active={category === 'restaurant'}>Restaurants & bars</Chip>
           <Chip to={href({ ...base, cat: 'grocery' })} active={category === 'grocery'}>Grocery</Chip>
           <Chip to={href({ ...base, deals: withDeals ? null : '1' })} active={withDeals}>With deals</Chip>
+          <Chip to={href({ ...base, open: openNow ? null : '1' })} active={openNow}>Open now</Chip>
         </div>
         <div className="ml-auto inline-flex rounded-full border border-line bg-surface p-0.5">
           <Link href={href({ ...base, view: null })} aria-label="Grid view" className={cn('grid h-8 w-8 place-items-center rounded-full', view === 'grid' ? 'bg-brand text-white' : 'text-muted hover:text-foreground')}><GridIcon className="h-4 w-4" /></Link>
@@ -78,13 +87,32 @@ export default async function PlacesPage(props: PageProps<'/places'>) {
         </div>
       </div>
 
+      <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden" role="list" aria-label="Cuisines">
+        {chips.map((c) => {
+          const active = cuisine === c.slug;
+          return (
+            <Link key={c.slug} role="listitem" href={href({ ...base, cuisine: active ? null : c.slug })} className={cn('inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition', active ? 'border-brand bg-brand-soft text-brand' : 'border-line bg-surface text-foreground hover:border-brand hover:text-brand')}>
+              <span aria-hidden>{c.emoji}</span>{c.label}
+            </Link>
+          );
+        })}
+      </div>
+
       {error && <div className="mb-4"><SetupNotice error={error} /></div>}
-      <p className="mb-3 text-sm text-muted">
-        {places.length}{places.length === PAGE_SIZE && view === 'grid' ? '+' : ''} places within {miles} mi{query ? ` matching “${query}”` : ''} · {withDealCount} with live deals
-      </p>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted">
+          {places.length}{places.length === PAGE_SIZE && view === 'grid' ? '+' : ''} places within {miles} mi{query ? ` matching “${query}”` : ''}{cuisine ? ` · ${CUISINE_BY_SLUG.get(cuisine)?.label}` : ''} · {withDealCount} with live deals
+        </p>
+        <div className="flex items-center gap-1 text-xs">
+          <span className="text-muted">Sort</span>
+          {SORTS.map((s) => (
+            <Link key={s.key} href={href({ ...base, sort: s.key === 'best' ? null : s.key })} className={cn('rounded-full px-2.5 py-1 font-medium', sort === s.key ? 'bg-foreground text-background' : 'text-muted hover:text-foreground')}>{s.label}</Link>
+          ))}
+        </div>
+      </div>
 
       {places.length === 0 && !error ? (
-        <EmptyState title={`No places within ${miles} mi`} description="Widen the radius or pick a neighborhood above." emoji="🗺️" />
+        <EmptyState title={openNow ? `Nothing open right now within ${miles} mi` : `No places within ${miles} mi`} description="Widen the radius, clear a filter, or pick a neighborhood above." emoji="🗺️" />
       ) : view === 'map' ? (
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
           <PlacesMapLazy

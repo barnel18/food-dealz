@@ -11,7 +11,7 @@ export interface QueryResult<T> {
   error: string | null;
 }
 
-const BUSINESS_SELECT = 'id,name,slug,category,chain_key,address,city,state,postal_code,phone,website_url,google_place_id,featured_until,is_active,logo_url,photo_url,lat,lng';
+const BUSINESS_SELECT = 'id,name,slug,category,chain_key,address,city,state,postal_code,phone,website_url,google_place_id,featured_until,is_active,logo_url,photo_url,lat,lng,rating,review_count,price_level,cuisines,primary_type,hours,photos,editorial_summary,google_maps_uri';
 
 export interface DealFilters {
   category?: BusinessCategory | null;

@@ -31,7 +31,8 @@
     "flipp:sync": "tsx scripts/sync-flipp.ts",
     "crawl:type": "tsx scripts/enqueue-by-type.ts",
     "deals:prune": "tsx scripts/prune-mismatched.ts",
-    "deals:apply": "tsx scripts/apply-review.ts"
+    "deals:apply": "tsx scripts/apply-review.ts",
+    "google:sync": "tsx scripts/google-sync.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

@@ -1,4 +1,5 @@
 import type { BusinessCategory, UnitKind } from '@/lib/taxonomy/canonical-items';
+import type { OpeningHours, PlacePhoto } from '@/lib/places/types';
 
 export type { BusinessCategory, UnitKind };
 export type DealType = 'fixed_price' | 'percent_off' | 'amount_off' | 'bogo' | 'bundle' | 'free_item';
@@ -90,6 +91,15 @@ export interface BusinessRow {
   photo_url?: string | null;
   lat?: number;
   lng?: number;
+  rating?: number | null;
+  review_count?: number | null;
+  price_level?: number | null;
+  cuisines?: string[];
+  primary_type?: string | null;
+  hours?: OpeningHours | null;
+  photos?: PlacePhoto[];
+  editorial_summary?: string | null;
+  google_maps_uri?: string | null;
 }
 
 /** `deals` table row. */
