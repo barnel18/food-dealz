@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "taxonomy:gen": "tsx scripts/gen-taxonomy-migration.ts",
     "db:push": "supabase db push --linked --project-ref bsdtucwqxbjypnvkrvyt",
@@ -29,7 +29,8 @@
     "osm:seed": "tsx scripts/seed-osm.ts",
     "flipp:sync": "tsx scripts/sync-flipp.ts",
     "crawl:type": "tsx scripts/enqueue-by-type.ts",
-    "deals:prune": "tsx scripts/prune-mismatched.ts"
+    "deals:prune": "tsx scripts/prune-mismatched.ts",
+    "deals:apply": "tsx scripts/apply-review.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
@@ -42,6 +43,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
+    "tsx": "^4.23.13",
     "zod": "^4.5.4"
   },
   "devDependencies": {
@@ -53,7 +55,6 @@
     "eslint-config-next": "16.3.4",
     "supabase": "^2.116.0",
     "tailwindcss": "^4",
-    "tsx": "^4.23.13",
     "typescript": "^5",
     "vitest": "^4.1.11"
   },
