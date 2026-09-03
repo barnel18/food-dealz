@@ -1,0 +1,9 @@
+{
+  "name": "Plain menu with regular prices (no deals expected)",
+  "input": {
+    "businessName": "Ian's Pizza on State", "category": "restaurant", "sourceType": "website", "sourceUrl": "https://example.com/menu",
+    "captureDate": "2026-09-03", "postedAt": null, "imageUrls": [],
+    "text": "## Slices\nCheese $4.25 · Pepperoni $4.75 · Mac n' Cheese $5.25 · Smokey the Bandit $5.50\n\n## Whole Pies (18\")\nCheese $24 · One topping $27 · Specialty $32\n\n## Drinks\nFountain soda $2.50 · Spotted Cow $6"
+  },
+  "expected": []
+}

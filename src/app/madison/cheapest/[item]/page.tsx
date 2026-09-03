@@ -12,7 +12,6 @@ import { categoryMeta } from '@/lib/taxonomy/categories';
 
 /** Public, crawlable "cheapest X in Madison" pages. Regenerated hourly (ISR); no cookies used. */
 export const revalidate = 3600;
-export const dynamicParams = false;
 
 export function generateStaticParams() {
   return CANONICAL_ITEMS.map((i) => ({ item: i.slug }));

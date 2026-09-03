@@ -1,0 +1,15 @@
+{
+  "name": "Supper club specials page",
+  "input": {
+    "businessName": "Toby's Supper Club", "category": "restaurant", "sourceType": "website", "sourceUrl": "https://example.com/specials",
+    "captureDate": "2026-09-03", "postedAt": null, "imageUrls": [],
+    "text": "## Weekly Specials\n\n**Friday Fish Fry** — beer-battered cod, fries, coleslaw and rye. All you can eat $18.50. Perch dinner $21.\n\n**Thursday Steak Night** — 12 oz ribeye with baked potato, $24 (reg. $32).\n\nHappy hour Monday–Friday 4–6pm: $4 rails, $3 domestic bottles.\n\nOur full menu is available online."
+  },
+  "expected": [
+    { "canonical_item_slug": "fish_fry", "deal_type": "fixed_price", "price": 18.5, "days_of_week": [5] },
+    { "canonical_item_slug": "fish_fry", "deal_type": "fixed_price", "price": 21, "days_of_week": [5] },
+    { "canonical_item_slug": "steak_dinner", "deal_type": "fixed_price", "price": 24, "regular_price": 32, "days_of_week": [4] },
+    { "canonical_item_slug": "cocktail", "deal_type": "fixed_price", "price": 4, "days_of_week": [1, 2, 3, 4, 5] },
+    { "canonical_item_slug": "beer_bottle", "deal_type": "fixed_price", "price": 3, "days_of_week": [1, 2, 3, 4, 5] }
+  ]
+}

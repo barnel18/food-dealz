@@ -13,9 +13,18 @@ Full v1 plan (architecture, schema rationale, phases, verification): `/Users/luc
 - Jobs: Postgres `jobs` table + `claim_jobs()` (FOR UPDATE SKIP LOCKED); a long-lived Node worker in `worker/` (local during dev, Railway at launch).
 
 ## Commands
-- `pnpm dev` / `pnpm build` / `pnpm typecheck` / `pnpm lint` / `pnpm test`
+- `pnpm dev` / `pnpm build` / `pnpm typecheck` / `pnpm lint` / `pnpm test` (vitest: unit-price, kroger size parsing, postprocess)
+- `pnpm worker:dev` (poll jobs forever) / `pnpm worker:once` (drain queue, exit) — the pipeline only moves while a worker runs (locally or on Railway via `railway.json`).
+- `pnpm crawl:enqueue [sourceId]` — queue crawls now. `pnpm kroger:sync [zip] [miles]` — upsert Kroger-banner stores + price-feed sources.
+- `pnpm discover:instagram [tags…]` / `pnpm discover:reddit` — find Madison food businesses; inserted INACTIVE for review at `/admin/businesses?status=inactive`.
+- `pnpm key [NAME]` — save an API key into `.env.local` from a terminal prompt (`SUPABASE_DB_PASSWORD` also builds `DATABASE_URL`). `pnpm dev:login <email> [base] [next]` — one-time sign-in link, no email needed.
 - `pnpm taxonomy:gen [version]` — regenerate the `canonical_items` seed migration after editing `src/lib/taxonomy/canonical-items.ts`. Use a new timestamp once the previous seed migration has been applied.
-- `pnpm db:push` / `pnpm db:types` — after `pnpm exec supabase link --project-ref <ref>`.
+- `pnpm db:push` / `pnpm db:types` / `pnpm db:query "<sql>"` — project ref is pinned in the scripts. If `db push` fails on the DB password, apply a migration with `pnpm db:query -f supabase/migrations/<file>.sql` (Management API) and fix the keyring later via `supabase link -p`.
+
+## Production
+- https://fooddealz.site (Vercel project `food-dealz`, team `barnes-inc1`; GitHub `barnel18/food-dealz` auto-deploys `main`; manual: `vercel deploy --prod --yes`). Deployment Protection is on, so `*.vercel.app` URLs need a Vercel login; the custom domain is public.
+- Supabase ref `bsdtucwqxbjypnvkrvyt`; auth redirect URLs live in `supabase/config.toml` (`supabase config push`).
+- Admin: `/admin` (email in `ADMIN_EMAILS` or `profiles.role='admin'`). Website/Kroger/portal deals auto-approve when checks pass; Instagram always goes to review.
 
 ## Conventions
 - `src/lib/taxonomy/canonical-items.ts` is the single source of truth for items. Never hand-edit the generated seed migration.

@@ -59,6 +59,23 @@ supabase/migrations/        schema, RLS, RPC functions, taxonomy seed
 scripts/                    seeding + codegen
 ```
 
+## Pipeline
+
+Deals come from three adapters (`src/lib/adapters`): Firecrawl for restaurant web pages, Apify for Instagram accounts,
+and Kroger's public API for Pick 'n Save / Metro Market prices. Captures are extracted by Claude into structured deals
+(`src/lib/extraction`), checked (prices must appear verbatim in the source), and either auto-approved or queued for review.
+
+```bash
+pnpm worker:dev          # run the job worker (crawl → extract → expire)
+pnpm crawl:enqueue       # queue every active source now
+pnpm kroger:sync         # add Kroger stores near Madison as price feeds
+pnpm discover:instagram  # find local food businesses by hashtag (inactive until reviewed)
+pnpm discover:reddit     # find businesses people mention on r/madisonwi
+pnpm dev:login you@x.com # one-time local sign-in link
+```
+
+Review, businesses, sources, captures and jobs live at `/admin`.
+
 ## Scripts
 
 - `pnpm taxonomy:gen [version]` regenerates the `canonical_items` seed migration from the TypeScript taxonomy.

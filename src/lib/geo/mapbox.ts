@@ -51,3 +51,36 @@ export async function reverseGeocodeLabel(lat: number, lng: number, token: strin
   const f = json.features?.[0];
   return f?.properties?.name ?? f?.properties?.context?.neighborhood?.name ?? f?.properties?.context?.place?.name ?? null;
 }
+
+export interface PoiResult {
+  name: string;
+  label: string;
+  lat: number;
+  lng: number;
+  categories: string[];
+}
+
+/** Mapbox Search Box POI lookup — finds businesses by name, with categories. */
+export async function poiSearch(q: string, token: string, proximity: { lat: number; lng: number }, limit = 3): Promise<PoiResult[]> {
+  const url = new URL('https://api.mapbox.com/search/searchbox/v1/forward');
+  url.searchParams.set('q', q);
+  url.searchParams.set('access_token', token);
+  url.searchParams.set('types', 'poi');
+  url.searchParams.set('limit', String(limit));
+  url.searchParams.set('country', 'us');
+  url.searchParams.set('proximity', `${proximity.lng},${proximity.lat}`);
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`mapbox searchbox failed: ${res.status}`);
+  const json = (await res.json()) as {
+    features?: Array<{ properties?: { name?: string; full_address?: string; place_formatted?: string; coordinates?: { latitude?: number; longitude?: number }; poi_category?: string[] } }>;
+  };
+  return (json.features ?? [])
+    .map((f) => {
+      const p = f.properties ?? {};
+      if (!p.name || p.coordinates?.latitude == null || p.coordinates?.longitude == null) return null;
+      return { name: p.name, label: p.full_address ?? p.place_formatted ?? p.name, lat: p.coordinates.latitude, lng: p.coordinates.longitude, categories: p.poi_category ?? [] };
+    })
+    .filter((r): r is PoiResult => r !== null);
+}
+
+export const FOOD_POI_RE = /restaurant|food|bar|pub|cafe|coffee|bakery|brew|pizza|taco|burger|deli|dessert|ice cream|grill|diner|grocery|supermarket|market|dining|tavern|bistro|steak|sushi|bbq|barbecue|wings|donut|bagel|noodle|sandwich|juice|tea|winery|distillery|creamery|custard/i;

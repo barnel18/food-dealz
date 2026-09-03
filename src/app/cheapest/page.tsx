@@ -1,10 +1,13 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { EmptyState } from '@/components/empty-state';
 import { Leaderboard } from '@/components/leaderboard';
 import { LocationBar } from '@/components/location-bar';
 import { SetupNotice } from '@/components/setup-notice';
+import { LeaderboardSkeleton } from '@/components/skeletons';
 import { getCheapestByItem } from '@/lib/deals/queries';
+import type { UserLocation } from '@/lib/location/cookie';
 import { getLocationOrDefault } from '@/lib/location/server';
 import type { BusinessCategory } from '@/lib/taxonomy/canonical-items';
 import { cn } from '@/lib/utils/cn';
@@ -18,7 +21,6 @@ export default async function CheapestPage(props: PageProps<'/cheapest'>) {
   const cat = first(sp.cat);
   const category: BusinessCategory | null = cat === 'restaurant' || cat === 'grocery' ? cat : null;
   const { location, isDefault } = await getLocationOrDefault();
-  const { data: rows, error } = await getCheapestByItem(location, category);
 
   const tabs: Array<{ label: string; value: BusinessCategory | null }> = [
     { label: 'Everything', value: null },
@@ -47,12 +49,24 @@ export default async function CheapestPage(props: PageProps<'/cheapest'>) {
           </Link>
         ))}
       </div>
-      {error && <div className="mb-4"><SetupNotice error={error} /></div>}
-      {rows.length === 0 && !error ? (
-        <EmptyState title="No comparable deals yet" description="Deals need a price per unit to rank here. Widen the radius or check back after the next crawl." action={{ href: '/deals', label: 'See all deals' }} />
-      ) : (
-        <Leaderboard rows={rows} />
-      )}
+      <Suspense fallback={<LeaderboardSkeleton />}>
+        <LeaderboardSection location={location} category={category} />
+      </Suspense>
     </div>
   );
+}
+
+async function LeaderboardSection({ location, category }: { location: UserLocation; category: BusinessCategory | null }) {
+  const { data: rows, error } = await getCheapestByItem(location, category);
+  if (error) return <SetupNotice error={error} />;
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        title="No comparable deals yet"
+        description="Deals need a price per unit to rank here. Widen the radius or check back after the next crawl."
+        action={{ href: '/deals', label: 'See all deals' }}
+      />
+    );
+  }
+  return <Leaderboard rows={rows} />;
 }

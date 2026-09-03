@@ -1,0 +1,12 @@
+{
+  "name": "Instagram caption with recurring special",
+  "input": {
+    "businessName": "Taqueria Guadalajara", "category": "restaurant", "sourceType": "instagram", "sourceUrl": "https://www.instagram.com/p/abc/",
+    "captureDate": "2026-09-03", "postedAt": "2026-09-01T18:00:00Z", "imageUrls": [],
+    "text": "TACO TUESDAY is back 🌮🌮 $1.75 street tacos all day every Tuesday, dine in only. Pair it with a $5 margarita 🍹 See you tomorrow! #madisonwi #tacotuesday"
+  },
+  "expected": [
+    { "canonical_item_slug": "taco", "deal_type": "fixed_price", "price": 1.75, "days_of_week": [2] },
+    { "canonical_item_slug": "cocktail", "deal_type": "fixed_price", "price": 5, "days_of_week": [2] }
+  ]
+}

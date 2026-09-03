@@ -18,6 +18,8 @@ export interface DealFilters {
   todayOnly?: boolean;
   limit?: number;
   offset?: number;
+  /** Max rows per business in the feed (null = uncapped). Ignored when `item` is set. */
+  perBusiness?: number | null;
 }
 
 export async function getDealsInRadius(loc: UserLocation, f: DealFilters = {}): Promise<QueryResult<DealInRadius[]>> {
@@ -32,6 +34,7 @@ export async function getDealsInRadius(loc: UserLocation, f: DealFilters = {}): 
     p_today_only: f.todayOnly ?? false,
     p_limit: f.limit ?? 40,
     p_offset: f.offset ?? 0,
+    p_per_business: f.perBusiness === undefined ? (f.category === 'grocery' ? 6 : 3) : f.perBusiness,
   });
   if (error) {
     console.error('[deals_in_radius]', error.message);

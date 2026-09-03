@@ -1,0 +1,17 @@
+{
+  "name": "Grocery weekly ad text",
+  "input": {
+    "businessName": "Woodman's Market West", "category": "grocery", "sourceType": "website", "sourceUrl": "https://example.com/weekly-ad",
+    "captureDate": "2026-09-03", "postedAt": null, "imageUrls": [],
+    "text": "WEEKLY AD · Sep 3 – Sep 9\n\nGround Beef 80/20 Family Pack ....... $3.99 lb\nBoneless Skinless Chicken Breast ..... $1.99 lb\nLarge Eggs, dozen .................... $1.79\nJack's Original Frozen Pizza ......... 2 for $6\nJohnsonville Brats 19 oz ............. $3.99\nCoca-Cola 12 pk cans ................. $6.49\nBananas .............................. 49¢ lb"
+  },
+  "expected": [
+    { "canonical_item_slug": "ground_beef_lb", "price": 3.99, "unit": "lb", "quantity": 1, "ends_at": "2026-09-09" },
+    { "canonical_item_slug": "chicken_breast_lb", "price": 1.99, "unit": "lb" },
+    { "canonical_item_slug": "eggs_dozen", "price": 1.79, "unit": "dozen" },
+    { "canonical_item_slug": "frozen_pizza", "deal_type": "bundle", "price": 6, "quantity": 2 },
+    { "canonical_item_slug": "sausage_lb", "price": 3.99, "quantity": 19, "unit": "oz" },
+    { "canonical_item_slug": "soda_can", "price": 6.49, "quantity": 12 },
+    { "canonical_item_slug": "bananas_lb", "price": 0.49, "unit": "lb" }
+  ]
+}

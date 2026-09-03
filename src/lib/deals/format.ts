@@ -35,7 +35,7 @@ export function formatMoney(value: number | string | null | undefined, opts: { c
 export function formatUnitPrice(unitPrice: number | null | undefined, comparableUnit: UnitKind): string {
   if (unitPrice === null || unitPrice === undefined) return '';
   const money = formatMoney(unitPrice, { cents: true });
-  return comparableUnit === 'each' ? `${money} ea` : `${money}/${unitShort(comparableUnit)}`;
+  return comparableUnit === 'each' ? money : `${money}/${unitShort(comparableUnit)}`;
 }
 
 /** The big price line on a card. */
